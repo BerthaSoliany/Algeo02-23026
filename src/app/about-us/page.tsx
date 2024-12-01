@@ -1,15 +1,33 @@
 import NavBar from '@/src/components/NavBar';
+import Profile from '@/src/components/Profile';
 import React from 'react'
 
 function AboutUs() {
   return (
-    <div className="bg-[url('/bg.png')] bg-cover bg-center min-h-screen flex flex-col">
+    <div className="bg-[url('/bg.png')] bg-cover bg-center min-h-screen flex flex-col mb-5">
       <NavBar />
-      <div className="mt-20 mx-auto bg-gray-800 py-1 px-2 rounded-md font-bold text-lg text-center max-w-[550px]">
-        <h1 className="text-yellow-400 text-3xl mt-5">Selamat datang di ...!</h1>
-        <p className="text-white mt-5">... adalah program sederhana yang memungkinkan anda untuk melakukan pencarian gambar dan lagu berdasarkan database yang kami miliki.</p>
-        <p className="text-white text-sm mt-5 mb-2">dirancang oleh,<br/>ikan dan pisang</p>
-      </div>
+      <p className="font-bold text-black text-6xl text-center mt-6 text-shadow">About Us</p>
+      <Profile 
+        image1='/ash.png'
+        image2="/bertha.jpg"
+        name="Bertha Soliany Frandi"
+        nim="13523026"
+        quote="..."
+      />
+      <Profile 
+        image1='/eiji.png'
+        image2="/bertha.jpg"
+        name="Rafen Max Allesandro"
+        nim="13523031"
+        quote="..."
+      />
+      <Profile 
+        image1='/wong.png'
+        image2="/bertha.jpg"
+        name="Grace Evelyn Simon"
+        nim="13523087"
+        quote="..."
+      />
     </div>
   );
 }
