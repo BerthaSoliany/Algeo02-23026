@@ -15,7 +15,7 @@ function NavBar() {
             <img src="/logo.png" alt="logo" className="w-auto h-16 sm:h-20 mx-5" />
         </a>
         <div className="flex-grow hidden md:flex justify-center">
-            <a href="/finder" className="hover:underline mx-1 sm:mx-5 text-yellow-400 hover:text-white border-l border-white pl-2 sm:pl-5">Finder</a>
+            <a href="/finder" className="hover:underline mx-1 text-yellow-400 hover:text-white">Finder</a>
             <a href="/about-us" className="hover:underline mx-1 sm:mx-5 text-yellow-400 hover:text-white border-l border-white pl-2 sm:pl-5">About Us</a>
         </div>
         <div className="md:hidden">
