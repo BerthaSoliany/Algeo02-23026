@@ -12,11 +12,10 @@ function NavBar() {
   return (
     <div className="mt-4 mx-auto bg-gray-800 border-2 border-white py-1 px-2 rounded-full font-bold text-lg text-center max-w-[550px] sticky top-4 flex items-center justify-between z-20">
         <a href="/">
-            <img src="/logo.png" alt="logo" className="w-auto h-16 sm:h-20 mx-5" /> {/* mengarah ke home berisi penjelasan singkat project dan cara menggunakan */}
+            <img src="/logo.png" alt="logo" className="w-auto h-16 sm:h-20 mx-5" />
         </a>
         <div className="flex-grow hidden md:flex justify-center">
-            <a href="/album" className="hover:underline mx-1 sm:mx-5 text-yellow-400 hover:text-white border-l border-white pl-2 sm:pl-5">Album</a>
-            <a href="/music" className="hover:underline mx-1 sm:mx-5 text-yellow-400 hover:text-white border-l border-white pl-2 sm:pl-5">Music</a>
+            <a href="/finder" className="hover:underline mx-1 sm:mx-5 text-yellow-400 hover:text-white border-l border-white pl-2 sm:pl-5">Finder</a>
             <a href="/about-us" className="hover:underline mx-1 sm:mx-5 text-yellow-400 hover:text-white border-l border-white pl-2 sm:pl-5">About Us</a>
         </div>
         <div className="md:hidden">
@@ -28,8 +27,7 @@ function NavBar() {
       </div>
       {isMobileMenuOpen && (
         <div className="absolute top-16 left-0 w-full bg-gray-800 border-t border-black md:hidden">
-          <a href="/album" className="block px-4 py-2 text-yellow-400 hover:bg-yellow-400 hover:text-white">Album</a>
-          <a href="/music" className="block px-4 py-2 text-yellow-400 hover:bg-yellow-400 hover:text-white">Music</a>
+          <a href="/finder" className="block px-4 py-2 text-yellow-400 hover:bg-yellow-400 hover:text-white">Finder</a>
           <a href="/about-us" className="block px-4 py-2 text-yellow-400 hover:bg-yellow-400 hover:text-white">About Us</a>
         </div>
       )}

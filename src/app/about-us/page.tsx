@@ -23,7 +23,7 @@ function AboutUs() {
       />
       <Profile 
         image1='/wong.png'
-        image2="/bertha.jpg"
+        image2="/grace.jpg"
         name="Grace Evelyn Simon"
         nim="13523087"
         quote="..."
