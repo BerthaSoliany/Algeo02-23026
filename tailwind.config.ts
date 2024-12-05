@@ -8,7 +8,15 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        custom: ["PressStart2P-Regular", "sans-serif"],
+      },
+      dropShadow: {
+        'glow': '0 0 5px rgba(255, 255, 255, 0.8)',
+      },
       colors: {
+        customBlue1: "#40618C",
+        customBlue2: "#235596",
         background: "var(--background)",
         foreground: "var(--foreground)",
       },

@@ -4,9 +4,9 @@ import React from 'react'
 
 function AboutUs() {
   return (
-    <div className="bg-[url('/bg.png')] bg-cover bg-center min-h-screen flex flex-col mb-5">
+    <div className="bg-[url('/image1.png')] bg-cover bg-center min-h-screen flex flex-col p-2 md:p-4 font-custom">
       <NavBar />
-      <p className="font-bold text-black text-6xl text-center mt-6 text-shadow">About Us</p>
+      <p className="font-bold text-white text-5xl text-center mt-6">About Us</p>
       <Profile 
         image1='/ash.png'
         image2="/bertha.jpg"
@@ -16,7 +16,7 @@ function AboutUs() {
       />
       <Profile 
         image1='/eiji.png'
-        image2="/bertha.jpg"
+        image2="/max.jpg"
         name="Rafen Max Allesandro"
         nim="13523031"
         quote="..."
