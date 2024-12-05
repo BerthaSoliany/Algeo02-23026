@@ -1,6 +1,6 @@
 declare module 'midi.js' {
     interface LoadPluginOptions {
-      soundfontUrl: string;
+      soundfontUrl: URL;
       instrument: string;
       onprogress?: (state: string, progress: number) => void;
       onsuccess?: () => void;

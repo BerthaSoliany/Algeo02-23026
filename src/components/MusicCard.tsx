@@ -14,13 +14,13 @@ function MusicCard({ image, name, audioSrc }: MusicCardProps) {
   useEffect(() => {
     if (audioSrc && audioSrc.endsWith('.mid')) {
       MIDI.loadPlugin({
-        soundfontUrl: './soundfont/',
+        soundfontUrl: new URL('https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/'), // Replace with your SoundFont URL
         instrument: 'acoustic_grand_piano',
         onprogress: (state, progress) => {
-          console.log(state, progress);
+          console.log('Loading SoundFont:', state, progress);
         },
         onsuccess: () => {
-          console.log('MIDI plugin loaded');
+          console.log('MIDI plugin loaded successfully');
         },
       });
     }
@@ -28,7 +28,10 @@ function MusicCard({ image, name, audioSrc }: MusicCardProps) {
 
   const handlePlayPause = () => {
     if (audioSrc && audioSrc.endsWith('.mid')) {
-      MIDI.Player.loadFile(audioSrc, MIDI.Player.start);
+      MIDI.Player.loadFile(audioSrc, () => {
+        console.log('MIDI file loaded:', audioSrc);
+        MIDI.Player.start();
+      });
     } else if (audioRef.current) {
       if (audioRef.current.paused) {
         audioRef.current.play();
@@ -44,7 +47,7 @@ function MusicCard({ image, name, audioSrc }: MusicCardProps) {
         <img src={image} className="w-full h-full object-contain" alt={name} />
       </div>
       <div className="flex flex-row items-center space-x-1">
-        <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[145px]">{name}</p>
+        <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[100px]">{name}</p>
         <button onClick={handlePlayPause}>
           <FaPlayCircle className="w-4 h-4 text-white" />
         </button>
