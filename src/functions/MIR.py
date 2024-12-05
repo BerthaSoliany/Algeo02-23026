@@ -1,5 +1,5 @@
-import numpy as np # Numerical Python
-import mido # MIDI Objects for Python
+import numpy as np
+import mido
 import os
 import time
 
@@ -29,6 +29,39 @@ def load_midi_file(file_path, channel = 1):
         raise ValueError(f"File MIDI {file_path} tidak memiliki note pada channel {channel}.")
 
     return np.array(melody)
+
+def load_midi_file_considering_channels(file_path):
+    
+    # Membaca file MIDI dengan library mido
+    midi = mido.MidiFile(file_path)
+
+    # Dictionary untuk menyimpan jumlah note per channel di setiap track
+    channel_note_counts = {}
+
+    # Iterasi setiap track dalam file MIDI
+    for track in midi.tracks:
+        
+        # Iterasi setiap pesan MIDI dalam track
+        for msg in track:
+            
+            # Cek jika pesan MIDI adalah 'note_on'
+            if msg.type == 'note_on':
+                
+                # Ambil channel dari pesan
+                channel = msg.channel
+
+                # Jika channel belum ada dalam dictionary, buat entry baru
+                if channel not in channel_note_counts:
+                    channel_note_counts[channel] = []
+                
+                # Tambahkan note ke list untuk channel yang sesuai
+                channel_note_counts[channel].append(msg.note)
+
+    # Cari channel dengan jumlah note terbanyak
+    max_channel = max(channel_note_counts, key=lambda x: len(channel_note_counts[x]))
+
+    # Mengambil note dengan jumlah terbanyak
+    return np.array(channel_note_counts[max_channel])
 
 def normalize_pitch(notes):
 
@@ -161,6 +194,7 @@ def find_most_similar_midi(query_midi_path, processed_audios):
     
     for i, vectors in enumerate(processed_audios):
         
+        print(f"pemrosesan processed_audios ke-{i}")
         # ekstraksi histogram untuk database MIDI
         db_hist_atb = compute_histogram_absolute(vectors)
         db_hist_rtb = compute_histogram_relative(vectors)
@@ -185,8 +219,8 @@ if __name__ == "__main__":
     
     start = time.time()
     
-    query_file = "../test/query.mid"
-    dataset_audios = "../test/audios"
+    query_file = "./test/query.mid"
+    dataset_audios = "./test/audios"
 
     processed_audios = []
     audio_names = []
@@ -203,7 +237,6 @@ if __name__ == "__main__":
 
     similarities = find_most_similar_midi(query_file, processed_audios)
 
-    
     i = 1
     for idx, value in similarities:
         print(f"{i}. Audio {audio_names[idx]} dengan nilai kemiripan: {value}")

@@ -3,7 +3,7 @@ from PIL import Image
 import os
 import time
 
-# yang sifatnya interchangeable: target_size (di dalam load_and_process_image), k, top_n
+# yang sifatnya interchangeable: target_size (di dalam load_and_process_image), k (di dalam set_pca), top_n
 def nearest_neighbor(img_array, target_size):
     
     original_height, original_width = img_array.shape
@@ -75,8 +75,8 @@ def set_pca(centered_dataset):
     # Lakukan Singular Value Decomposition (SVD)
     U, S, Ut = np.linalg.svd(C)
 
-    # Pilih k komponen utama (misal k=50)
-    k = 50
+    # Pilih k komponen utama
+    k = 10
     eigenvectors = U[:, :k]  # Ambil k eigenvector teratas (H*W x k)
 
     # Proyeksikan data ke komponen utama
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     start = time.time()
 
-    folder_path = "../test/images"
+    folder_path = "./test/images"
     image_paths = [f for f in os.listdir(folder_path) if f.endswith(('.png', '.jpg', '.jpeg'))]
     print("hasil image_paths:", image_paths)
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     eigenvectors, projected_dataset = set_pca(centered_dataset)
 
-    query_path = "../test/query.jpg"
+    query_path = "./test/query.jpg"
     query_vector = load_and_process_image(query_path, dataset=False)
 
     projected_query_vector = project_to_pca(query_vector, mean_pixel_values, eigenvectors)
