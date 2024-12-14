@@ -2,6 +2,8 @@ import numpy as np
 from PIL import Image
 import os
 import time
+import scipy.linalg
+from scipy.spatial.distance import pdist
 
 # yang sifatnya interchangeable: target_size (di dalam load_and_process_image), k (di dalam set_pca), top_n
 def nearest_neighbor(img_array, target_size):
@@ -46,7 +48,7 @@ def load_and_process_image(image_path, dataset):
         grayscale_array = img_array
     
     # Mengubah ukuran array ke dimensi target secara manual
-    target_size = (20, 20)
+    target_size = (10, 10)
     resized_array = nearest_neighbor(grayscale_array, target_size)
     
     # Mengubah array 2D menjadi vektor 1D
@@ -73,7 +75,7 @@ def set_pca(centered_dataset):
     C = np.cov(centered_dataset, rowvar=False)  # Covariance matrix (H*W x H*W)
 
     # Lakukan Singular Value Decomposition (SVD)
-    U, S, Ut = np.linalg.svd(C)
+    U, S, Ut = scipy.linalg.svd(C, full_matrices=False)
 
     # Pilih k komponen utama
     k = 10
@@ -83,6 +85,41 @@ def set_pca(centered_dataset):
     projected_dataset = np.dot(centered_dataset, eigenvectors)  # Z adalah data terproyeksi (N x k)
 
     return eigenvectors, projected_dataset
+
+def set_pca_without_cov(centered_dataset):
+
+    N = centered_dataset.shape[0]
+    centered_dataset = np.transpose(centered_dataset) / (N**0.5)
+
+    # Lakukan Singular Value Decomposition (SVD)
+    U, S, Ut = scipy.linalg.svd(centered_dataset, full_matrices=False)
+
+    # Pilih k komponen utama
+    k = 10
+    eigenvectors = U[:, :k] * S[:k]  # Skalakan eigenvector dengan nilai singular
+
+    # Normalisasi eigenvector
+    eigenvectors = eigenvectors / np.linalg.norm(eigenvectors, axis=0)
+
+    # Proyeksikan data ke komponen utama
+    centered_dataset = np.transpose(centered_dataset)
+    projected_dataset = np.dot(centered_dataset, eigenvectors)
+
+    return eigenvectors, projected_dataset
+
+def validate_query_file(query_path):
+    
+    # Ekstensi yang diizinkan
+    allowed_extensions = {'.jpg', '.png', '.jpeg'}
+    
+    # Ambil ekstensi file
+    _, ext = os.path.splitext(query_path)
+    
+    # Periksa apakah ekstensi file valid
+    if ext.lower() not in allowed_extensions:
+        raise ValueError(f"File {query_path} memiliki format yang tidak valid. "
+                         f"Harap gunakan file dengan ekstensi .jpg, .png, atau .jpeg.")
+    return query_path
 
 def project_to_pca(query_vector, mean_pixel_values, eigenvectors):
     
@@ -97,6 +134,7 @@ def project_to_pca(query_vector, mean_pixel_values, eigenvectors):
 def compute_euclidean_distance(projected_query_vector, projected_dataset):
     
     distances = []
+    max_distance = np.max(pdist(projected_dataset))
     
     for i, vector in enumerate(projected_dataset):
         
@@ -106,16 +144,38 @@ def compute_euclidean_distance(projected_query_vector, projected_dataset):
     
     # Urutkan berdasarkan jarak terkecil
     distances.sort(key=lambda x: x[1])
+
+    # Normalisasi jarak menjadi persentase
+    normalized_distances = [
+        (index, max(0, min(100, 100 * (1 - distance / max_distance)))) for index, distance in distances
+    ]
     
-    return distances
+    return normalized_distances
+
+def get_image_paths(similarities, image_paths):
+
+    final_lists = []
+
+    for i, value in similarities:
+        final_list = {"name": image_paths[i], "similarity": value}
+        final_lists.append([final_list])
+
+    return final_lists
 
 if __name__ == "__main__":
 
     start = time.time()
 
     folder_path = "./test/images"
-    image_paths = [f for f in os.listdir(folder_path) if f.endswith(('.png', '.jpg', '.jpeg'))]
-    print("hasil image_paths:", image_paths)
+
+    image_paths = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            if file.endswith(('.png', '.jpg', '.jpeg')):
+                relative_path = os.path.relpath(os.path.join(root, file), folder_path)
+                image_paths.append(relative_path)
+
+    print(image_paths)
 
     processed_images = [load_and_process_image(image_path, dataset=True) for image_path in image_paths]
 
@@ -123,16 +183,30 @@ if __name__ == "__main__":
 
     eigenvectors, projected_dataset = set_pca(centered_dataset)
 
-    query_path = "./test/query.jpg"
+    query_paths = ["./test/query.jpg", "./test/query.png", "./test/query.jpeg"]
+    for query_path in query_paths:
+        try:
+            query_path = validate_query_file(query_path)
+            print(f"Query file {query_path} diproses.")
+            break
+        except ValueError as e:
+            print(e)
+
     query_vector = load_and_process_image(query_path, dataset=False)
 
     projected_query_vector = project_to_pca(query_vector, mean_pixel_values, eigenvectors)
 
     similarities = compute_euclidean_distance(projected_query_vector, projected_dataset)
 
-    top_n = 10
-    for idx, dist in similarities[:top_n]:
-        print(f"Gambar {image_paths[idx]} dengan jarak: {dist}")
+    final_lists = get_image_paths(similarities, image_paths)
+    # top_n = 10
+    # for idx, percentage in similarities:
+    #     print(f"Gambar {image_paths[idx]} dengan persentase: {percentage:.2f}%")
+
+    i = 0
+    for final_list in final_lists:
+        print(final_lists[i])
+        i += 1
 
     end = time.time()
     print(end - start)
