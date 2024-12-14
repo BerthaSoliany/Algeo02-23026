@@ -10,7 +10,7 @@ function NavBar() {
     };
 
   return (
-    <div className="mx-auto bg-gray-800 border-2 border-white py-1 px-2 rounded-full font-bold text-xs text-center max-w-[550px] sticky top-4 flex items-center justify-between z-20">
+    <div className="mx-auto bg-gray-800 border-2 border-white py-1 px-2 rounded-full font-bold text-xs text-center max-w-[550px] flex items-center justify-between z-20">
         <a href="/">
             <img src="/logo.png" alt="logo" className="w-auto h-16 sm:h-20 mx-5 hover:drop-shadow-glow transition-shadow duration-300" />
         </a>

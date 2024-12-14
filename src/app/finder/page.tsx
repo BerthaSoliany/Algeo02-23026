@@ -8,8 +8,20 @@ import { GoTriangleRight } from "react-icons/go";
 import { GoTriangleLeft } from "react-icons/go";
 import { ClipLoader } from 'react-spinners';
 
+interface Album{
+  image: string;
+  name: string;
+  similarity: number;
+}
 
-function Album() {
+interface Music{
+  image: string;
+  name: string;
+  audioSrc: string;
+  similarity: number;
+}
+
+function Finder() {
   const [activeButton, setActiveButton] = useState<'album' | 'music' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -18,21 +30,47 @@ function Album() {
   const [mapperFileName, setMapperFileName] = useState<string | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [albumData, setAlbumData] = useState<any[]>([]);
+  const [musicData, setMusicData] = useState<any[]>([]);
   const itemsPerPage = 10;
 
   const handleButtonClick = (button: 'album' | 'music') => {
     setActiveButton(button);
     setCurrentPage(1);
     setLoading(true);
+    setExecutionTime(null);
   };
 
+  // replace this with the real time data fetching
   useEffect(() => {
-    if (activeButton) {
-      // Simulate data fetching
-      setTimeout(() => {
-        setLoading(false);
-      }, 1000); // Adjust the timeout as needed
-    }
+    const fetchData = async () => {
+      if (activeButton) {
+        const startTime = performance.now(); // Start time measurement
+        try {
+          let data;
+          if (activeButton === 'album') {
+            // Fetch album data
+            const response = await fetch('http://127.0.0.1:5000/api/albums'); // Replace with your API endpoint
+            data = await response.json();
+            setAlbumData(data);
+          } else if (activeButton === 'music') {
+            // Fetch music data
+            const response = await fetch('http://127.0.0.1:5000/api/albums'); // Replace with your API endpoint
+            data = await response.json();
+            setMusicData(data);
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          const endTime = performance.now(); // End time measurement
+          setExecutionTime(endTime - startTime); // Calculate execution time
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
   }, [activeButton]);
 
   const handleFileChange = (file: File | null, type: 'upload' | 'datasetAudio' | 'datasetImage' | 'mapper') => {
@@ -56,32 +94,6 @@ function Album() {
     }
   };
 
-  const albumData = [
-    { image: '/path/to/album1.jpg', name: 'Album 1', src: '', similarity: 0.9 },
-    { image: '/path/to/album2.jpg', name: 'Album 2', src: '', similarity: 0.85 },
-    { image: '/path/to/album3.jpg', name: 'Album 3', src: '', similarity: 0.8 },
-    { image: '/path/to/album4.jpg', name: 'Album 4', src: '', similarity: 0.75 },
-    { image: '/path/to/album5.jpg', name: 'Album 5', src: '', similarity: 0.7 },
-    { image: '/path/to/album6.jpg', name: 'Album 6', src: '', similarity: 0.65 },
-    // Add more album data
-  ];
-
-  const musicData = [
-    { image: '/path/to/music1.jpg', name: 'Music 1', src: 'public/../I_Want_It_That_Way.mid', similarity: 0.9 },
-    { image: '/path/to/music1.jpg', name: 'Music 2', src: './public/town-10169.mp3', similarity: 0.85 },
-    { image: '/path/to/music1.jpg', name: 'Music 3', src: '/town-10169.mp3', similarity: 0.8 },
-    { image: '/path/to/music1.jpg', name: 'Music 4', src: './town-10169.mp3', similarity: 0.75 },
-    { image: '/path/to/music1.jpg', name: 'Music 5', src: '../town-10169.mp3', similarity: 0.7 },
-    { image: '/path/to/music1.jpg', name: 'Music 6', src: '', similarity: 0.65 },
-    { image: '/path/to/music1.jpg', name: 'Music 7', src: '/path/to/music1.mp3', similarity: 0.6 },
-    { image: '/path/to/music1.jpg', name: 'Music 8', src: '/path/to/music1.mp3', similarity: 0.55 },
-    { image: '/path/to/music1.jpg', name: 'Music 9', src: '/path/to/music1.mp3', similarity: 0.5 },
-    { image: '/path/to/music1.jpg', name: 'Music 10', src: '/path/to/music1.mp3', similarity: 0.45 },
-    { image: '/path/to/music1.jpg', name: 'Music 11', src: '/path/to/music1.mp3', similarity: 0.4 },
-    { image: '/path/to/music1.jpg', name: 'Music 12', src: '/path/to/music1.mp3', similarity: 0.35 },
-
-    // Add more music data
-  ];
   
   const currentData = activeButton === 'album' ? albumData : activeButton === 'music' ? musicData : [];
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
@@ -103,10 +115,10 @@ function Album() {
   const currentItems = currentData.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
-    <div className="bg-[url('/image1.png')] bg-cover bg-center min-h-screen flex flex-col p-2 md:p-4 font-custom">
+    <div className="relative bg-[url('/image1.png')] bg-cover bg-center min-h-screen flex flex-col p-2 md:p-4 font-custom">
       <NavBar />
       <div className="flex flex-col space-y-2 md:flex-row md:space-x-5 text-xs items-center">
-        <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:max-w-[320px] h-auto md:h-[440px] flex flex-col justify-center items-center space-y-2">
+        <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:max-w-[320px] min-h-screen flex flex-col justify-center items-center space-y-2">
           {/* search dgn click album/music */}
           {/* mapper dibuat sendiri */}
           <div className="flex flex-col space-y-1 items-center">
@@ -143,7 +155,7 @@ function Album() {
             {mapperFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Mapper: {mapperFileName}</p>}
           </div>
         </div>
-        <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:w-full h-auto md:h-[440px] flex flex-col">
+        <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
           <div className="flex flex-row justify-center items-center mt-1 space-x-5">
           <button
               onClick={() => handleButtonClick('album')}
@@ -158,8 +170,13 @@ function Album() {
               Music
             </button>
           </div>
+          {loading ? (
+            <div className="flex justify-center items-center mt-8 h-full">
+              <ClipLoader color="#ffffff" size={50} />
+            </div>
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 flex-grow">
-            {/* tambahin loading, waktu eksekusi*/}
+            {/* tambahin waktu eksekusi*/}
             {currentItems.length > 0 ? (
               currentItems.map((item, index) => (
                 activeButton === 'album' ? (
@@ -183,6 +200,10 @@ function Album() {
               <p></p>
             )}
           </div>
+          )}
+          {!loading && executionTime !== null && (
+            <p className='text-white text-sm'>Waktu eksekusi: {executionTime.toFixed(2)} ms</p>
+          )}
           {currentItems.length > 0 && (
             <div className="flex flex-col items-center mt-2">
               <div className="flex justify-center space-x-4 items-center">
@@ -212,4 +233,4 @@ function Album() {
   );
 }
 
-export default Album;
+export default Finder;

@@ -1,8 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { FaPlayCircle } from 'react-icons/fa';
-import { FaPauseCircle } from 'react-icons/fa';
-import { FaExclamationCircle } from 'react-icons/fa';
-import MIDI from 'midi.js';
+import React, { useRef, useState } from 'react';
+import { FaPlayCircle, FaPauseCircle, FaExclamationCircle } from 'react-icons/fa';
+import { MidiPlayer } from 'react-midi-player';
 
 interface MusicCardProps {
   image: string;
@@ -16,44 +14,14 @@ function MusicCard({ image, name, audioSrc, similarity }: MusicCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    if (!audioSrc) {
-      setHasError(true);
-      return;
-    }
-
-    if (audioSrc && audioSrc.endsWith('.mid')) {
-      MIDI.loadPlugin({
-        soundfontUrl: new URL('https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/'), // Replace with your SoundFont URL
-        instrument: 'acoustic_grand_piano',
-        onprogress: (state, progress) => {
-          console.log('Loading SoundFont:', state, progress);
-        },
-        onsuccess: () => {
-          console.log('MIDI plugin loaded successfully');
-          setHasError(false);
-        },
-      });
-    }
-  }, [audioSrc]);
-
   const handlePlayPause = () => {
     if (!audioSrc) {
       setHasError(true);
       return;
     }
 
-    if (audioSrc && audioSrc.endsWith('.mid')) {
-      if (isPlaying) {
-        MIDI.Player.stop();
-        setIsPlaying(false);
-      } else {
-        MIDI.Player.loadFile(audioSrc, () => {
-          console.log('MIDI file loaded:', audioSrc);
-          MIDI.Player.start();
-          setIsPlaying(true);
-        });
-      }
+    if (audioSrc.endsWith('.mid')) {
+      setIsPlaying(!isPlaying);
     } else if (audioRef.current) {
       if (audioRef.current.paused) {
         audioRef.current.play().catch((error) => {
@@ -74,7 +42,7 @@ function MusicCard({ image, name, audioSrc, similarity }: MusicCardProps) {
   };
 
   return (
-    <div className="flex flex-col space-y-1">
+    <div className="flex flex-col space-y-1 items-center">
       <div className="w-[160px] h-[100px] p-2 bg-gray-800 rounded-md flex items-center justify-center">
         <img src={image} className="w-full h-full object-contain" alt={name} />
       </div>
@@ -93,6 +61,14 @@ function MusicCard({ image, name, audioSrc, similarity }: MusicCardProps) {
           <audio ref={audioRef} src={audioSrc} onError={handleAudioError} />
         )}
       </div>
+      {audioSrc && audioSrc.endsWith('.mid') && isPlaying && (
+        <MidiPlayer
+          src={audioSrc}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnd={() => setIsPlaying(false)}
+        />
+      )}
       <p className="text-white text-[8px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[145px]">{similarity}%</p>
     </div>
   );
