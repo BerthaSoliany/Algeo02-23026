@@ -1,7 +1,27 @@
 import numpy as np
-import mido
+import mido # MIDI Objects for Python
 import os
 import time
+
+def fix_invalid_bytes(file_path, output_path):
+    try:
+        midi = mido.MidiFile(file_path)
+        for i, track in enumerate(midi.tracks):
+            for msg in track:
+                if hasattr(msg, 'data'):
+                    corrected_data = []
+                    for byte in msg.data:
+                        if byte < 0:
+                            corrected_data.append(0)  # replace invalid byte with 0
+                        elif byte > 127:
+                            corrected_data.append(127)  # replace invalid byte with 127
+                        else:
+                            corrected_data.append(byte)
+                    msg.data = corrected_data
+        midi.save(output_path)
+        print(f"Fixed MIDI file saved to {output_path}")
+    except Exception as e:
+        print(f"Error while fixing file {file_path}: {e}")
 
 # 1. Pemrosesan Audio, Normalisasi Pitch, dan Windowing, fokus pada track melodi utama di Channel 1
 def load_midi_file(file_path, channel = 1):
@@ -62,6 +82,87 @@ def load_midi_file_considering_channels(file_path):
 
     # Mengambil note dengan jumlah terbanyak
     return np.array(channel_note_counts[max_channel])
+
+def load_midi_file_considering_duration(file_path, main_channel=None):
+    midi = mido.MidiFile(file_path)
+    channel_durations = {}
+    
+    for track in midi.tracks:
+        active_notes = {}
+        current_time = 0
+        
+        for msg in track:
+            current_time += msg.time
+            
+            if msg.type == 'note_on' and msg.velocity > 0:
+                channel = msg.channel
+                active_notes.setdefault(channel, []).append(current_time)
+                
+            elif msg.type in ['note_off', 'note_on'] and msg.velocity == 0:
+                channel = msg.channel
+                if channel in active_notes and active_notes[channel]:
+                    start_time = active_notes[channel].pop(0)
+                    duration = current_time - start_time
+                    channel_durations[channel] = channel_durations.get(channel, 0) + duration
+    
+    if main_channel is None:
+        if channel_durations:
+            main_channel = max(channel_durations, key=channel_durations.get)
+            print(f"Longest active channel: {main_channel + 1}")
+        else:
+            raise ValueError(f"No active channels found in {file_path}.")
+
+    melody = []
+    for track in midi.tracks:
+        for msg in track:
+            if msg.type == 'note_on' and msg.channel == main_channel and msg.velocity > 0:
+                melody.append(msg.note)
+    
+    if not melody:
+        raise ValueError(f"File {file_path} has no notes in channel {main_channel + 1}.")
+
+    return np.array(melody)
+
+def load_midi_file_considering_main_channel(file_path):
+    def find_main_channel(file_path):
+        midi = mido.MidiFile(file_path)
+        for track in midi.tracks:
+            for msg in track:
+                if msg.type == 'note_on' and msg.channel == 0:
+                    return 0
+        potential_main_channels = []
+        fallback_channels = []
+        for track in midi.tracks:
+            channel_data = {}
+            for msg in track:
+                if msg.type == 'note_on' and msg.velocity > 0:
+                    channel = msg.channel
+                    pitch = msg.note
+                    if channel not in channel_data:
+                        channel_data[channel] = {"notes": 0, "pitches": []}
+                    channel_data[channel]["notes"] += 1
+                    channel_data[channel]["pitches"].append(pitch)
+            for channel, data in channel_data.items():
+                notes = data["notes"]
+                pitch_range = (min(data["pitches"]) if data["pitches"] else None, 
+                               max(data["pitches"]) if data["pitches"] else None)
+                if notes > 50 and pitch_range[0] >= 60 and pitch_range[1] <= 80:
+                    potential_main_channels.append((channel, notes, pitch_range))
+                else:
+                    fallback_channels.append((channel, notes, pitch_range))
+        if potential_main_channels:
+            best_channel = max(potential_main_channels, key=lambda x: x[1])
+            return best_channel[0]
+        elif fallback_channels:
+            best_channel = max(fallback_channels, key=lambda x: x[1])
+            return best_channel[0]
+        else:
+            raise ValueError("No main channel found.")
+    try:
+        main_channel = find_main_channel(file_path)
+        return load_midi_file(file_path, channel=main_channel + 1)
+    except Exception as e:
+        raise ValueError(f"Error processing {file_path}: {e}")
 
 def normalize_pitch(notes):
 
@@ -194,7 +295,6 @@ def find_most_similar_midi(query_midi_path, processed_audios):
     
     for i, vectors in enumerate(processed_audios):
         
-        print(f"pemrosesan processed_audios ke-{i}")
         # ekstraksi histogram untuk database MIDI
         db_hist_atb = compute_histogram_absolute(vectors)
         db_hist_rtb = compute_histogram_relative(vectors)
@@ -229,14 +329,17 @@ if __name__ == "__main__":
             if file.endswith('.mid') or file.endswith('.midi'):
                     audio_names.append(file)
                     file_path = os.path.join(root, file)
+                    fixed_file_path = os.path.join(root, f"fixed_{file}")
                     try:
-                        db_notes = load_midi_file(file_path)
+                        fix_invalid_bytes(file_path, fixed_file_path)
+                        db_notes = load_midi_file_considering_main_channel(file_path)
                         processed_audios.append(db_notes)
                     except Exception as e:
                         print(f"Gagal memproses file {file_path}: {e}")
 
     similarities = find_most_similar_midi(query_file, processed_audios)
 
+    
     i = 1
     for idx, value in similarities:
         print(f"{i}. Audio {audio_names[idx]} dengan nilai kemiripan: {value}")
