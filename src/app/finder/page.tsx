@@ -43,6 +43,83 @@ function Finder() {
     setExecutionTime(null); // Reset execution time
   }, [loading]);
 
+  const uploadDataset = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/upload-dataset', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Backend error response:', errorText);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Upload successful:', data);
+        alert(`Dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
+    } catch (error) {
+        console.error('Failed to upload dataset:', error);
+        alert('Failed to upload dataset.');
+    }
+  };
+
+  const uploadQueryFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/upload-query', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Backend error response:', errorText);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Query file uploaded successfully:', data);
+        alert(`Query file uploaded successfully! File path: ${data.file_path}`);
+    } catch (error) {
+        console.error('Failed to upload query file:', error);
+        alert('Failed to upload query file.');
+    }
+};
+
+  const fetchMirResults = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://127.0.0.1:5000/process-similarity', { method: 'POST' });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+      const data = await response.json();
+
+      if (data.success) {
+        const mappedResults: Music[] = data.results.map((result: any) => ({
+          image: 'public/ash.png',
+          name: result.file_name,
+          audioSrc: `/audio/${result.file_name}`, // Path audio file
+          similarity: result.similarity,
+        }));
+
+        setMusicData(mappedResults);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch similarity results:', error);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (activeButton) {
@@ -73,40 +150,42 @@ function Finder() {
     fetchData();
   }, [activeButton]);
 
-  const handleFileChange = (file: File | null, type: 'upload' | 'datasetAudio' | 'datasetImage' | 'mapper') => {
+  const handleFileChange = (file: File | null, type: 'upload' | 'datasetAudio' | 'datasetImage' | 'mapper' | 'query') => {
     if (file) {
-      if (type === 'upload') {
-        setUploadedFileName(file.name);
-        // Check if the uploaded file is an image
-        if (file.type.startsWith('image/')|| file.name.endsWith('.mid')) {
-          const url = URL.createObjectURL(file);
-          setUploadedImageUrl(url);
-        } else {
-          setUploadedImageUrl(null);
+        if (type === 'query') {
+            uploadQueryFile(file);
+        } else if (type === 'upload') {
+            setUploadedFileName(file.name);
+            if (file.type.startsWith('image/')|| file.name.endsWith('.mid')) {
+                const url = URL.createObjectURL(file);
+                setUploadedImageUrl(url);
+            } else {
+                setUploadedImageUrl(null);
           setUploadedFileName(null);
           alert('Please upload an image file');
-        }
-      } else if (type === 'datasetAudio') {
+            }
+        } else if (type === 'datasetAudio') {
         if (file.type.startsWith('audio/') || file.name.endsWith('.mid') || file.name.endsWith('.zip')) {
-          setDatasetAudioFileName(file.name);
+              setDatasetAudioFileName(file.name);
         } else {
           alert('Please upload an audio file');
         }
-      } else if (type === 'datasetImage') {
+            uploadDataset(file);
+        } else if (type === 'datasetImage') {
         if (file.type.startsWith('image/') || file.name.endsWith('.zip')) {
-          setDatasetImageFileName(file.name);
+              setDatasetImageFileName(file.name);
         } else {
           alert('Please upload an image file');
         }
-      } else if (type === 'mapper') {
+        } else if (type === 'mapper') {
         if (file.name.endsWith('.json') || file.name.endsWith('.txt')) {
-          setMapperFileName(file.name);
+              setMapperFileName(file.name);
         } else {
           alert('Please upload a JSON or TXT file');
         }
-      }
+        }
     }
-  };
+};
   
   const currentData = activeButton === 'album' ? albumData : activeButton === 'music' ? musicData : [];
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
@@ -142,16 +221,27 @@ function Finder() {
             )}
             {uploadedFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">{uploadedFileName}</p>}
           </div>
-          <Button
-            text="Upload"
-            onFileChange={(file) => handleFileChange(file, "upload")}
-          />
-          <div className='flex flex-col items-center space-y-2'>
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              text="Upload"
+              onFileChange={(file) => handleFileChange(file, 'query')}
+            />
+            {uploadedFileName && (
+                <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                  Query File: {uploadedFileName}
+                </p>
+              )}
+          </div>
+          <div className="flex flex-col items-center space-y-2">
             <Button
               text="Dataset Audio"
               onFileChange={(file) => handleFileChange(file, 'datasetAudio')}
             />
-            {datasetAudioFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Audio: {datasetAudioFileName}</p>}
+            {datasetAudioFileName && (
+              <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                Audio: {datasetAudioFileName}
+              </p>
+            )}
           </div>
           <div className='flex flex-col items-center space-y-2'>
             <Button
@@ -166,6 +256,12 @@ function Finder() {
               onFileChange={(file) => handleFileChange(file, 'mapper')}
             />
             {mapperFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Mapper: {mapperFileName}</p>}
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              text="Process MIR"
+              onClick={fetchMirResults}
+            />
           </div>
         </div>
         <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
