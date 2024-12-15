@@ -36,14 +36,13 @@ function Finder() {
   const itemsPerPage = 10;
 
   const handleButtonClick = useCallback((button: 'album' | 'music') => {
-    if (loading) return; // Prevent multiple rapid clicks
+    if (loading) return;
     setActiveButton(button);
     setCurrentPage(1);
     setLoading(true);
     setExecutionTime(null); // Reset execution time
   }, [loading]);
 
-  // replace this with the real time data fetching
   useEffect(() => {
     const fetchData = async () => {
       if (activeButton) {

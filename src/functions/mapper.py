@@ -31,9 +31,3 @@ def generate_mapper_json(images_folder, audios_folder, output_file):
         json.dump(mapper_data, mapper_file, indent=4)  # Menyimpan dengan indentasi 4 untuk keterbacaan
 
     print(f"Mapper file '{output_file}' generated successfully.")
-
-images_folder = "./test/images"  
-audios_folder = "./test/audios"  
-output_file = "mapper.json"
-
-generate_mapper_json(images_folder, audios_folder, output_file)
