@@ -12,7 +12,7 @@ function AboutUs() {
         image2="/bertha.jpg"
         name="Bertha Soliany Frandi"
         nim="13523026"
-        quote="..."
+        quote="mau turu tapi belum kelar :<"
       />
       <Profile 
         image1='/eiji.png'

@@ -3,7 +3,7 @@ import Button from '@/src/components/Button';
 import AlbumCard from '@/src/components/AlbumCard';
 import MusicCard from '@/src/components/MusicCard';
 import NavBar from '@/src/components/NavBar';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { GoTriangleRight } from "react-icons/go";
 import { GoTriangleLeft } from "react-icons/go";
 import { ClipLoader } from 'react-spinners';
@@ -31,16 +31,17 @@ function Finder() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
-  const [albumData, setAlbumData] = useState<any[]>([]);
-  const [musicData, setMusicData] = useState<any[]>([]);
+  const [albumData, setAlbumData] = useState<Album[]>([]);
+  const [musicData, setMusicData] = useState<Music[]>([]);
   const itemsPerPage = 10;
 
-  const handleButtonClick = (button: 'album' | 'music') => {
+  const handleButtonClick = useCallback((button: 'album' | 'music') => {
+    if (loading) return; // Prevent multiple rapid clicks
     setActiveButton(button);
     setCurrentPage(1);
     setLoading(true);
-    setExecutionTime(null);
-  };
+    setExecutionTime(null); // Reset execution time
+  }, [loading]);
 
   // replace this with the real time data fetching
   useEffect(() => {
@@ -56,7 +57,7 @@ function Finder() {
             setAlbumData(data);
           } else if (activeButton === 'music') {
             // Fetch music data
-            const response = await fetch('http://127.0.0.1:5000/api/albums'); // Replace with your API endpoint
+            const response = await fetch('http://127.0.0.1:5000/api/music'); // Replace with your API endpoint
             data = await response.json();
             setMusicData(data);
           }
@@ -93,7 +94,6 @@ function Finder() {
       }
     }
   };
-
   
   const currentData = activeButton === 'album' ? albumData : activeButton === 'music' ? musicData : [];
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
@@ -118,7 +118,7 @@ function Finder() {
     <div className="relative bg-[url('/image1.png')] bg-cover bg-center min-h-screen flex flex-col p-2 md:p-4 font-custom">
       <NavBar />
       <div className="flex flex-col space-y-2 md:flex-row md:space-x-5 text-xs items-center">
-        <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:max-w-[320px] min-h-screen flex flex-col justify-center items-center space-y-2">
+        <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:max-w-[320px] min-h-screen flex flex-col justify-center items-center space-y-2">
           {/* search dgn click album/music */}
           {/* mapper dibuat sendiri */}
           <div className="flex flex-col space-y-1 items-center">
@@ -155,7 +155,7 @@ function Finder() {
             {mapperFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Mapper: {mapperFileName}</p>}
           </div>
         </div>
-        <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
+        <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
           <div className="flex flex-row justify-center items-center mt-1 space-x-5">
           <button
               onClick={() => handleButtonClick('album')}
@@ -172,11 +172,10 @@ function Finder() {
           </div>
           {loading ? (
             <div className="flex justify-center items-center mt-8 h-full">
-              <ClipLoader color="#ffffff" size={50} />
+              <ClipLoader color="#ffffff" loading={loading} size={50} />
             </div>
           ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 flex-grow">
-            {/* tambahin waktu eksekusi*/}
             {currentItems.length > 0 ? (
               currentItems.map((item, index) => (
                 activeButton === 'album' ? (
@@ -191,7 +190,7 @@ function Finder() {
                     key={index}
                     image={item.image}
                     name={item.name}
-                    audioSrc={item.src}
+                    audioSrc={'audioSrc' in item ? (item as Music).audioSrc : ''}
                     similarity={item.similarity}
                   />
                 )

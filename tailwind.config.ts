@@ -13,6 +13,7 @@ export default {
       },
       dropShadow: {
         'glow': '0 0 5px rgba(255, 255, 255, 0.8)',
+        'dark': '0 0 5px rgba(0, 0, 0, 0.2)',
       },
       colors: {
         customBlue1: "#40618C",
