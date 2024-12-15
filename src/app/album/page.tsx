@@ -13,7 +13,7 @@ interface PlaylistData {
 }
 
 
-function Album() {
+function Album( ) {
   const [playlistData, setPlaylistData] = useState<PlaylistData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -59,10 +59,10 @@ function Album() {
       <NavBar/>
       <div className="mt-2 bg-black bg-opacity-50 rounded-3xl w-[90%] min-h-screen flex flex-col items-center p-0">
         <div className="bg-black bg-opacity-50 rounded-3xl py-5 px-10 md:px-20 w-full h-[220px] flex flex-row items-center items-start space-x-10">
-          <img src="./ash.png" alt="Album" className="w-[30%] h-auto md:w-[20%] md:h-auto" />
+          <img src="./sweetener.jpg" alt="Album" className="w-[30%] h-auto md:w-[20%] md:h-auto" />
           <div className="ml-5 flex flex-col space-y-4 truncate overflow-hidden whitespace-nowrap">
             <h1 className="text-white text-lg">Playlist</h1>
-            <p className="text-white text-3xl">Album Name</p>
+            <p className="text-white text-3xl">Nama lgu</p>
           </div>
         </div>
         <p className="text-white text-xl mt-5 -ml-[51%]">Songs</p>

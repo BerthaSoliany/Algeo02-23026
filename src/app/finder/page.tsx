@@ -88,13 +88,13 @@ function Finder() {
           alert('Please upload an image file');
         }
       } else if (type === 'datasetAudio') {
-        if (file.type.startsWith('audio/') || file.name.endsWith('.mid')) {
+        if (file.type.startsWith('audio/') || file.name.endsWith('.mid') || file.name.endsWith('.zip')) {
           setDatasetAudioFileName(file.name);
         } else {
           alert('Please upload an audio file');
         }
       } else if (type === 'datasetImage') {
-        if (file.type.startsWith('image/')) {
+        if (file.type.startsWith('image/') || file.name.endsWith('.zip')) {
           setDatasetImageFileName(file.name);
         } else {
           alert('Please upload an image file');
