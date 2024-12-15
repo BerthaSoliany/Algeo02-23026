@@ -21,6 +21,7 @@ def nearest_neighbor(img_array, target_size):
     # Iterasi piksel target
     for i in range(target_height):
         for j in range(target_width):
+            
             # Koordinat di gambar asli
             src_y = int(i * scale_y)
             src_x = int(j * scale_x)
@@ -30,7 +31,7 @@ def nearest_neighbor(img_array, target_size):
 
     return resized_array
 
-def load_and_process_image(image_path, dataset):
+def load_and_process_image(image_path, dataset, folder_path):
 
     # Memuat gambar
     if dataset:
@@ -48,7 +49,7 @@ def load_and_process_image(image_path, dataset):
         grayscale_array = img_array
     
     # Mengubah ukuran array ke dimensi target secara manual
-    target_size = (10, 10)
+    target_size = (64, 64)
     resized_array = nearest_neighbor(grayscale_array, target_size)
     
     # Mengubah array 2D menjadi vektor 1D
@@ -71,18 +72,21 @@ def standarized_dataset(processed_images):
 
 def set_pca(centered_dataset):
 
-    # Hitung matriks kovarians
-    C = np.cov(centered_dataset, rowvar=False)  # Covariance matrix (H*W x H*W)
+    centered_dataset_scaled = centered_dataset / np.sqrt(centered_dataset.shape[0])
 
     # Lakukan Singular Value Decomposition (SVD)
-    U, S, Ut = scipy.linalg.svd(C, full_matrices=False)
+    U, S, Ut = scipy.linalg.svd(centered_dataset_scaled, full_matrices=False)
 
-    # Pilih k komponen utama
-    k = 10
-    eigenvectors = U[:, :k]  # Ambil k eigenvector teratas (H*W x k)
+    explained_variance = (S ** 2) / np.sum(S ** 2)
+    cumulative_variance = np.cumsum(explained_variance)
+
+    # Pilih k komponen utama    
+    k = np.argmax(cumulative_variance >= 0.9) + 1
+    eigenvectors = Ut.T[:, :k]
+    # print(f"shape eigenvectors: {eigenvectors.shape}")
 
     # Proyeksikan data ke komponen utama
-    projected_dataset = np.dot(centered_dataset, eigenvectors)  # Z adalah data terproyeksi (N x k)
+    projected_dataset = np.dot(centered_dataset, eigenvectors)
 
     return eigenvectors, projected_dataset
 
@@ -175,9 +179,9 @@ if __name__ == "__main__":
                 relative_path = os.path.relpath(os.path.join(root, file), folder_path)
                 image_paths.append(relative_path)
 
-    print(image_paths)
+    # print(image_paths)
 
-    processed_images = [load_and_process_image(image_path, dataset=True) for image_path in image_paths]
+    processed_images = [load_and_process_image(image_path, dataset=True, folder_path=folder_path) for image_path in image_paths]
 
     mean_pixel_values, centered_dataset = standarized_dataset(processed_images)
 
@@ -192,16 +196,13 @@ if __name__ == "__main__":
         except ValueError as e:
             print(e)
 
-    query_vector = load_and_process_image(query_path, dataset=False)
+    query_vector = load_and_process_image(query_path, dataset=False, folder_path=None)
 
     projected_query_vector = project_to_pca(query_vector, mean_pixel_values, eigenvectors)
 
     similarities = compute_euclidean_distance(projected_query_vector, projected_dataset)
 
     final_lists = get_image_paths(similarities, image_paths)
-    # top_n = 10
-    # for idx, percentage in similarities:
-    #     print(f"Gambar {image_paths[idx]} dengan persentase: {percentage:.2f}%")
 
     i = 0
     for final_list in final_lists:
