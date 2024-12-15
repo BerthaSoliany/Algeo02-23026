@@ -44,7 +44,6 @@ const musicData = [
 // interface Music{
 //   image: string;
 //   name: string;
-//   audioSrc: string;
 //   similarity: number;
 // }
 
@@ -218,7 +217,6 @@ function Album() {
                     key={index}
                     image={item.image}
                     name={item.name}
-                    audioSrc={item.src}
                     similarity={item.similarity}
                   />
                 )

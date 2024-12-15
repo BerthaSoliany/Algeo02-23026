@@ -17,7 +17,7 @@ function AboutUs() {
       <Profile 
         image1='/eiji.png'
         image2="/max.jpg"
-        name="Rafen Max Allesandro"
+        name="Rafen Max Alessandro"
         nim="13523031"
         quote="..."
       />
@@ -26,7 +26,7 @@ function AboutUs() {
         image2="/grace.jpg"
         name="Grace Evelyn Simon"
         nim="13523087"
-        quote="..."
+        quote="stress is temporary, IPK is forever"
       />
     </div>
   );

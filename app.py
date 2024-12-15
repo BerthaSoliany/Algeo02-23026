@@ -20,8 +20,8 @@ def get_albums():
 @app.route('/api/music', methods=['GET'])
 def get_music():
     music = [
-        {"image": "/public/I_Want_It_That_Way.mid", "name": "Music 1", "audioSrc": "/path/to/audio1.mp3", "similarity": 0.9},
-        {"image": "/public/town-10169.mp3", "name": "Music 2", "audioSrc": "/path/to/audio2.mp3", "similarity": 0.85},
+        {"image": "/public/I_Want_It_That_Way.mid", "name": "Music 1", "similarity": 0.9},
+        {"image": "/public/town-10169.mp3", "name": "Music 2", "similarity": 0.85},
         # Add more music data
     ]
     return jsonify(music)
