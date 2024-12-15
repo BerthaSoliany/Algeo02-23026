@@ -79,18 +79,32 @@ function Finder() {
       if (type === 'upload') {
         setUploadedFileName(file.name);
         // Check if the uploaded file is an image
-        if (file.type.startsWith('image/')) {
+        if (file.type.startsWith('image/')|| file.name.endsWith('.mid')) {
           const url = URL.createObjectURL(file);
           setUploadedImageUrl(url);
         } else {
           setUploadedImageUrl(null);
+          setUploadedFileName(null);
+          alert('Please upload an image file');
         }
       } else if (type === 'datasetAudio') {
-        setDatasetAudioFileName(file.name);
+        if (file.type.startsWith('audio/') || file.name.endsWith('.mid')) {
+          setDatasetAudioFileName(file.name);
+        } else {
+          alert('Please upload an audio file');
+        }
       } else if (type === 'datasetImage') {
-        setDatasetImageFileName(file.name);
+        if (file.type.startsWith('image/')) {
+          setDatasetImageFileName(file.name);
+        } else {
+          alert('Please upload an image file');
+        }
       } else if (type === 'mapper') {
-        setMapperFileName(file.name);
+        if (file.name.endsWith('.json') || file.name.endsWith('.txt')) {
+          setMapperFileName(file.name);
+        } else {
+          alert('Please upload a JSON or TXT file');
+        }
       }
     }
   };
