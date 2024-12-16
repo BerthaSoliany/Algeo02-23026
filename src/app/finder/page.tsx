@@ -121,28 +121,28 @@ function Finder() {
 
   const fetchMirResults = async () => {
     try {
-      setLoading(true);
-      const response = await fetch('http://127.0.0.1:5000/process-similarity', { method: 'POST' });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        setLoading(true);
+        const response = await fetch('http://127.0.0.1:5000/process-similarity', { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (data.success) {
-        const mappedResults: Music[] = data.results.map((result: any) => ({
-          image: 'public/ash.png',
-          name: result.file_name,
-          audioSrc: `/audio/${result.file_name}`, // Path audio file
-          similarity: result.similarity,
-        }));
+        if (data.success) {
+            const mappedResults: Music[] = data.results.map((result: any) => ({
+                image: result.image || 'default_image_path.png', // Gambar dari hasil mapper
+                name: result.file_name,
+                audioSrc: result.audioSrc, // Path audio file
+                similarity: result.similarity,
+            }));
 
-        setMusicData(mappedResults);
-      } else {
-        alert(`Error: ${data.error}`);
-      }
-      setLoading(false);
+            setMusicData(mappedResults);
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+        setLoading(false);
     } catch (error) {
-      console.error('Failed to fetch similarity results:', error);
-      setLoading(false);
+        console.error('Failed to fetch similarity results:', error);
+        setLoading(false);
     }
   };
 
@@ -223,50 +223,34 @@ function Finder() {
             setDatasetImageFileName(file.name);
             uploadDatasetImage(file);
         } else if (type === 'mapper') {
-          if (file.name.endsWith('.json') || file.name.endsWith('.txt')) {
-            setMapperFileName(file.name);
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const mapperData = JSON.parse(e.target?.result as string);
-              setMapperData(mapperData);
-            };
-            reader.readAsText(file);
-          } else {
-            alert('Please upload a JSON or TXT file');
-          }
+          uploadMapper(file);
+          setMapperFileName(file.name);
         }
     }
 };
 
-  const handleMakeMapper = async () => {
+  const uploadMapper = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/generate_mapper_recursive', {
-        method: 'POST'
+      const response = await fetch('http://127.0.0.1:5000/upload-mapper', {
+        method: 'POST',
+        body: formData,
       });
+
       if (!response.ok) {
-        throw new Error('Failed to generate mapper');
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
+
       const data = await response.json();
-      console.log('Mapper:', data.mapper);
-
-      // Muat mapper ke state setelah berhasil dibuat
-      await handleLoadMapper();
+      console.log('Mapper uploaded successfully:', data);
+      alert(`Mapper uploaded successfully! File path: ${data.file_path}`);
     } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-  
-
-  const handleLoadMapper = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:5000/api/get_mapper'); // Endpoint untuk mendapatkan mapper.json
-      if (!response.ok) {
-        throw new Error('Failed to fetch mapper');
-      }
-      const data: Music[] = await response.json();
-      setMapperData(data); // Simpan ke state mapperData
-    } catch (error) {
-      console.error('Error loading mapper:', error);
+      console.error('Failed to upload mapper:', error);
+      alert('Failed to upload mapper.');
     }
   };
 
@@ -357,12 +341,16 @@ function Finder() {
               </p>
             )}
           </div>
-          <div className='flex flex-col items-center space-y-2'>
+          <div className="flex flex-col items-center space-y-2">
             <Button
               text="Upload Mapper"
               onFileChange={(file) => handleFileChange(file, 'mapper')}
             />
-            {mapperFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Mapper: {mapperFileName}</p>}
+            {mapperFileName && (
+              <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                Mapper: {mapperFileName}
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Button
