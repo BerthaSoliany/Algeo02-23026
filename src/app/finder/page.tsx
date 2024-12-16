@@ -33,8 +33,13 @@ function Finder() {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [albumData, setAlbumData] = useState<any[]>([]);
   const [musicData, setMusicData] = useState<Music[]>([]);
-  const [mapperData, setMapperData] = useState<any[]>([]);
+  const [activeAudio, setActiveAudio] = useState<string | null>(null);
   const itemsPerPage = 15;
+
+  const handlePlayAudio = (audioName: string) => {
+    console.log('Setting active audio:', audioName);
+    setActiveAudio(audioName); // Hanya satu audio aktif dalam satu waktu
+  };  
 
   const handleButtonClick = (button: 'album' | 'music') => {
     setActiveButton(button);
@@ -43,56 +48,104 @@ function Finder() {
     setExecutionTime(null);
   };
 
-  const uploadDataset = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
+  const fetchDatasetAudio = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:5000/upload-dataset', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Backend error response:', errorText);
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
+        const response = await fetch('http://127.0.0.1:5000/get-dataset-audio');
         const data = await response.json();
-        console.log('Upload successful:', data);
-        alert(`Dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
+
+        if (data.success) {
+            const audioResults = data.data.map((item: any) => ({
+                image: 'default_image_path.png', // Placeholder for audio (can be replaced with actual mapper data if available)
+                name: item.name,
+                audioSrc: item.audioSrc,
+                similarity: 0, // No similarity for plain dataset display
+            }));
+
+            setMusicData(audioResults);
+        } else {
+            alert(`Error: ${data.error}`);
+        }
     } catch (error) {
-        console.error('Failed to upload dataset:', error);
-        alert('Failed to upload dataset.');
+        console.error('Error fetching dataset audio:', error);
     }
+};
+
+  const fetchDatasetImages = async () => {
+    try {
+        const response = await fetch('http://127.0.0.1:5000/get-dataset-images');
+        const data = await response.json();
+
+        if (data.success) {
+            const imageResults = data.data.map((item: any) => ({
+                image: item.image,  // URL gambar dari backend
+                name: item.name,
+                similarity: 0, // No similarity for plain dataset display
+            }));
+
+            console.log("Fetched image results:", imageResults); // Debug log
+            setAlbumData(imageResults);
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Error fetching dataset images:', error);
+    }
+  };
+
+  // Call fetch functions after uploading dataset
+  const uploadDataset = async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+          const response = await fetch('http://127.0.0.1:5000/upload-dataset', {
+              method: 'POST',
+              body: formData,
+          });
+
+          if (!response.ok) {
+              const errorText = await response.text();
+              console.error('Backend error response:', errorText);
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          alert(`Dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
+
+          // Fetch dataset content
+          await fetchDatasetAudio(); // Fetch and display audio dataset
+      } catch (error) {
+          console.error('Failed to upload dataset:', error);
+          alert('Failed to upload dataset.');
+      }
   };
 
   const uploadDatasetImage = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+      const formData = new FormData();
+      formData.append('file', file);
 
-    try {
-      const response = await fetch('http://127.0.0.1:5000/upload-dataset-image', {
-        method: 'POST',
-        body: formData,
-      });
+      try {
+          const response = await fetch('http://127.0.0.1:5000/upload-dataset-image', {
+              method: 'POST',
+              body: formData,
+          });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Backend error response:', errorText);
-        throw new Error(`HTTP error! Status: ${response.status}`);
+          if (!response.ok) {
+              const errorText = await response.text();
+              console.error('Backend error response:', errorText);
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          alert(`Image dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
+
+          // Fetch dataset content
+          await fetchDatasetImages(); // Fetch and display image dataset
+      } catch (error) {
+          console.error('Failed to upload image dataset:', error);
+          alert('Failed to upload image dataset.');
       }
-
-      const data = await response.json();
-      console.log('Image dataset uploaded successfully:', data);
-      alert(`Image dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
-    } catch (error) {
-      console.error('Failed to upload image dataset:', error);
-      alert('Failed to upload image dataset.');
-    }
   };
-
 
   const uploadQueryFile = async (file: File) => {
     const formData = new FormData();
@@ -254,7 +307,12 @@ function Finder() {
     }
   };
 
-  const currentData = activeButton === 'album' ? albumData : activeButton === 'music' ? musicData : [];
+  const currentData =
+  activeButton === 'album'
+    ? albumData
+    : activeButton === 'music'
+    ? musicData
+    : [];
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
 
   const handleNextPage = () => {
@@ -367,7 +425,7 @@ function Finder() {
         </div>
         <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
           <div className="flex flex-row justify-center items-center mt-1 space-x-5">
-          <button
+            <button
               onClick={() => handleButtonClick('album')}
               className={`py-2 px-4 rounded ${activeButton === 'album' ? 'bg-gradient-to-r from-gray-800 to-gray-500 text-white' : 'bg-gradient-to-r from-customBlue1 to-customBlue2 text-white'}`}
             >
@@ -386,7 +444,6 @@ function Finder() {
             </div>
           ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 flex-grow">
-            {/* tambahin waktu eksekusi*/}
             {currentItems.length > 0 ? (
               currentItems.map((item, index) => (
                 activeButton === 'album' ? (
@@ -401,13 +458,15 @@ function Finder() {
                     key={index}
                     image={item.image}
                     name={item.name}
-                    audioSrc={item.src}
+                    audioSrc={item.audioSrc}
                     similarity={item.similarity}
+                    onPlay={() => handlePlayAudio(item.name)}
+                    isPlaying={activeAudio === item.name}
                   />
                 )
               ))
             ) : (
-              <p></p>
+              <p>No data available</p>
             )}
           </div>
           )}

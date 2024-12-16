@@ -254,7 +254,6 @@ def get_similarity_results():
 # endpoint untuk menghitung similarity gambar
 image_similarity_results = None
 @app.route('/process-image-similarity', methods=['POST'])
-@app.route('/process-image-similarity', methods=['POST'])
 def process_image_similarity():
     try:
         if not os.listdir(QUERY_UPLOAD_FOLDER):
@@ -337,8 +336,10 @@ def get_audio(filename):
 @app.route('/extracted_datasets_image/<path:filename>', methods=['GET'])
 def get_image(filename):
     try:
+        print(f"Serving file: {filename}")  # Debug log
         return send_from_directory(EXTRACT_IMAGE_FOLDER, filename, as_attachment=False)
     except FileNotFoundError:
+        print(f"File not found: {filename}")  # Debug log
         return jsonify({'error': 'File not found'}), 404
 
 # Endpoint untuk mengunggah file mapper
@@ -382,6 +383,41 @@ def generate_mapper():
         })
     except Exception as e:
         return jsonify({'error': f"Failed to generate mapper: {str(e)}"}), 500
+
+@app.route('/get-dataset-audio', methods=['GET'])
+def get_dataset_audio():
+    try:
+        dataset_files = [
+            {
+                "name": file,
+                "audioSrc": f"http://127.0.0.1:5000/get-audio/{file}",
+            }
+            for root, _, files in os.walk(EXTRACT_FOLDER)
+            for file in files if file.endswith('.mid') or file.endswith('.midi')
+        ]
+
+        return jsonify({'success': True, 'data': dataset_files})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/get-dataset-images', methods=['GET'])
+def get_dataset_images():
+    try:
+        image_files = []
+        for root, _, files in os.walk(EXTRACT_IMAGE_FOLDER):
+            for file in files:
+                if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    file_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(file_path, EXTRACT_IMAGE_FOLDER)
+                    image_files.append({
+                        "name": os.path.basename(file),
+                        "image": f"http://127.0.0.1:5000/extracted_datasets_image/{relative_path.replace(os.sep, '/')}"
+                    })
+        
+        print("Generated image URLs:", image_files)  # Debug log
+        return jsonify({'success': True, 'data': image_files})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == "__main__":
     app.run(debug=True)
