@@ -2,8 +2,12 @@
 > Tugas Besar 2 Aljabar Linear dan Geometri
 
 <!-- foto logo -->
-**<p align="center">Ikan dan Pisang</p>**
-**<p align="center">Kelompok 35</p>**
+<p align="center">
+    <img src=https://github.com/user-attachments/assets/4831f2f9-fe7b-4dcc-9d35-98c8e363388c/>
+</p>
+<h1 align="center">Ikan dan Pisang</h1>
+<h2 align="center">Kelompok 35</h2>
+
 
 ## Table of Contents
 - [About the Project](#about-the-project)
@@ -31,13 +35,17 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
     ```sh
     python -m venv venv
 
-4. Aktivasi virtual enviroment
+4. Aktivasi virtual enviroment</br>
   Untuk windows:
-    ```sh
+    ```
     venv\Scripts\activate
+    ```
+  </br>
   Untuk Unix-like Shell:
-    ```sh
+    ```
     source venv\Scripts\activate
+    ```
+</br>
 
 > [!NOTE]
 > Sesuaikan kembali path dari activate sesuai dengan venv masing-masing
@@ -84,33 +92,44 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
 ## Sneakpeak
 ### Halaman Home
 1. Deskripsi singkat
+<img width="866" alt="Screenshot 2024-12-16 181305" src="https://github.com/user-attachments/assets/89b19dee-ea71-433b-be81-17290b00e4c5" />
 
 2. Cara Penggunaan
+<img width="818" alt="Screenshot 2024-12-16 181349" src="https://github.com/user-attachments/assets/f49c290c-cf24-4663-bcf0-5241de167f5f" />
 
 3. Tentang proyek
-
+<img width="731" alt="Screenshot 2024-12-16 181444" src="https://github.com/user-attachments/assets/72ef7481-4ec7-4447-b9ca-4306caa3b7f1" />
 
 ### Halaman Finder
 1. Tampilan awal
+![image](https://github.com/user-attachments/assets/45256b00-eab8-45f0-b2cd-0e2a4350ce21)
 
-2. Error Message
+2. Message
 - Ketika salah mengunggah tipe file
+![image](https://github.com/user-attachments/assets/37b4dcb1-beb4-4e18-87fe-64e7e7127ea8)
 
 - Ketika Generate Auto Mapper
+![image](https://github.com/user-attachments/assets/f5a6fd24-f78c-4554-9355-69e14063921d)
 
 3. Tampilan unggah album/lagu
+![image](https://github.com/user-attachments/assets/f59a8b47-bb27-405a-85de-83f5ba873a9b)
 
 4. Tampilan unggahan lengkap
+![image](https://github.com/user-attachments/assets/bb7185f3-aaca-49e3-8fdc-83029704b1a4)
 
+5. Hasil
 
 ### Halaman About Us
-
+![image](https://github.com/user-attachments/assets/514e2f9b-a423-4b31-bc41-4d4a89780170)
+![image](https://github.com/user-attachments/assets/e742ca84-41a8-41bd-ace6-e8869b204156)
+![image](https://github.com/user-attachments/assets/d17b5010-a3fa-4cfd-a9d9-698733367c93)
 
 ### Lain-lain
 - Random Generate Mapper
+![image](https://github.com/user-attachments/assets/13b21019-7f14-4bdb-b3cd-44e237fcb864)
 
 - Auto-save
-
+![image](https://github.com/user-attachments/assets/378b2d0c-9ea9-4915-b31a-c27bd270c1ea)
 
 <!-- foto bareng -->
 ## Contributors
@@ -121,4 +140,4 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
 | 13523087 | Grace Evelyn Simon |
 </br>
 
-**<p align="center">Terima Kasih</p>**
+<h1 align="center">Terima Kasih</h1>
