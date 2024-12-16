@@ -253,8 +253,9 @@ def process_image_similarity():
         threshold = 55  # 55% similarity threshold
         filtered_results = [
             {
-                "file_name": result["name"],
-                "similarity": round(result["similarity"], 2)  # Round to 2 decimal places
+                "file_name": os.path.basename(result["name"]),  # Nama file untuk ditampilkan
+                "image_path": result["name"],  # Path lengkap untuk URL gambar
+                "similarity": round(result["similarity"], 2)  # Similarity dengan 2 desimal
             }
             for result_list in final_lists
             for result in result_list

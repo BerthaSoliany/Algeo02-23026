@@ -33,6 +33,7 @@ function Finder() {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [albumData, setAlbumData] = useState<any[]>([]);
   const [musicData, setMusicData] = useState<Music[]>([]);
+  const [mapperData, setMapperData] = useState<any[]>([]);
   const itemsPerPage = 15;
 
   const handleButtonClick = (button: 'album' | 'music') => {
@@ -152,12 +153,11 @@ function Finder() {
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
   
       const data = await response.json();
-  
       if (data.success) {
         const mappedResults = data.results.map((result: any) => ({
-          image: `http://127.0.0.1:5000/extracted_datasets_image/${result.file_name}`,
-          name: result.file_name,
-          similarity: result.similarity,
+          image: `http://127.0.0.1:5000/extracted_datasets_image/${result.image_path}`, // URL lengkap gambar
+          name: result.file_name, // Nama file untuk ditampilkan
+          similarity: result.similarity, // Similarity
         }));
   
         setAlbumData(mappedResults);
@@ -223,12 +223,53 @@ function Finder() {
             setDatasetImageFileName(file.name);
             uploadDatasetImage(file);
         } else if (type === 'mapper') {
+          if (file.name.endsWith('.json') || file.name.endsWith('.txt')) {
             setMapperFileName(file.name);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const mapperData = JSON.parse(e.target?.result as string);
+              setMapperData(mapperData);
+            };
+            reader.readAsText(file);
+          } else {
+            alert('Please upload a JSON or TXT file');
+          }
         }
     }
 };
 
+  const handleMakeMapper = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/generate_mapper_recursive', {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to generate mapper');
+      }
+      const data = await response.json();
+      console.log('Mapper:', data.mapper);
+
+      // Muat mapper ke state setelah berhasil dibuat
+      await handleLoadMapper();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
   
+
+  const handleLoadMapper = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/get_mapper'); // Endpoint untuk mendapatkan mapper.json
+      if (!response.ok) {
+        throw new Error('Failed to fetch mapper');
+      }
+      const data: Music[] = await response.json();
+      setMapperData(data); // Simpan ke state mapperData
+    } catch (error) {
+      console.error('Error loading mapper:', error);
+    }
+  };
+
   const currentData = activeButton === 'album' ? albumData : activeButton === 'music' ? musicData : [];
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
 
@@ -255,24 +296,44 @@ function Finder() {
         <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:max-w-[320px] min-h-screen flex flex-col justify-center items-center space-y-2">
           {/* search dgn click album/music */}
           {/* mapper dibuat sendiri */}
-          <div className="flex flex-col space-y-1 items-center">
-            {uploadedImageUrl && (
-              <div className="w-[240px] h-[140px] p-2 bg-gray-800 rounded-md flex items-center justify-center">
-                <img src={uploadedImageUrl} alt="Uploaded" className="w-full h-full object-contain" />
+          <div className="flex flex-col items-center space-y-2">
+            {/* Tampilkan pratinjau gambar dan nama file di atas tombol */}
+            {uploadedFileName && (
+              <div className="flex flex-col items-center space-y-2">
+                {/* Jika file adalah gambar, tampilkan pratinjau */}
+                {uploadedFileName.match(/\.(jpg|jpeg|png|gif)$/i) && uploadedImageUrl && (
+                  <div className="w-[240px] h-[140px] p-2 bg-gray-800 rounded-md flex items-center justify-center">
+                    <img
+                      src={uploadedImageUrl} // URL objek lokal untuk menampilkan gambar
+                      alt="Uploaded Preview"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
+                {/* Selalu tampilkan nama file */}
+                <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                  {uploadedFileName}
+                </p>
               </div>
             )}
-            {uploadedFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">{uploadedFileName}</p>}
-          </div>
-          <div className="flex flex-col items-center space-y-2">
+            {/* Tombol Upload */}
             <Button
               text="Upload"
-              onFileChange={(file) => handleFileChange(file, 'query')}
+              onFileChange={(file) => {
+                if (file) {
+                  handleFileChange(file, 'query'); // Kirim file ke backend menggunakan fungsi yang sudah ada
+                  setUploadedFileName(file.name); // Simpan nama file ke state
+                  if (file.type.startsWith('image/')) {
+                    // Jika file adalah gambar, buat URL untuk pratinjau
+                    const url = URL.createObjectURL(file);
+                    setUploadedImageUrl(url);
+                  } else {
+                    // Jika bukan gambar, kosongkan URL gambar
+                    setUploadedImageUrl(null);
+                  }
+                }
+              }}
             />
-            {uploadedFileName && (
-                <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
-                  Query File: {uploadedFileName}
-                </p>
-              )}
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Button
