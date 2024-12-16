@@ -173,6 +173,7 @@ function Finder() {
 };
 
   const fetchMirResults = async () => {
+    const startTime = performance.now();
     try {
         setLoading(true);
         const response = await fetch('http://127.0.0.1:5000/process-similarity', { method: 'POST' });
@@ -193,6 +194,9 @@ function Finder() {
             alert(`Error: ${data.error}`);
         }
         setLoading(false);
+        const endTime = performance.now();
+        const elapsedTime = (endTime - startTime)/1000;
+        setExecutionTime(elapsedTime);
     } catch (error) {
         console.error('Failed to fetch similarity results:', error);
         setLoading(false);
@@ -200,6 +204,7 @@ function Finder() {
   };
 
   const fetchImageSimilarityResults = async () => {
+    const startTime = performance.now();
     try {
       setLoading(true);
       const response = await fetch('http://127.0.0.1:5000/process-image-similarity', { method: 'POST' });
@@ -218,6 +223,9 @@ function Finder() {
         alert(`Error: ${data.error}`);
       }
       setLoading(false);
+      const endTime = performance.now();
+      const elapsedTime = (endTime - startTime)/1000;
+      setExecutionTime(elapsedTime);
     } catch (error) {
       console.error('Failed to fetch image similarity results:', error);
       setLoading(false);
@@ -228,7 +236,7 @@ function Finder() {
   useEffect(() => {
     const fetchData = async () => {
       if (activeButton) {
-        const startTime = performance.now(); // Start time measurement
+        // const startTime = performance.now(); // Start time measurement
         try {
           let data;
           if (activeButton === 'album') {
@@ -245,8 +253,8 @@ function Finder() {
         } catch (error) {
           console.error('Error fetching data:', error);
         } finally {
-          const endTime = performance.now(); // End time measurement
-          setExecutionTime(endTime - startTime); // Calculate execution time
+          // const endTime = performance.now(); // End time measurement
+          // setExecutionTime(endTime - startTime); // Calculate execution time
           setLoading(false);
         }
       }
@@ -471,10 +479,13 @@ function Finder() {
           </div>
           )}
           {!loading && executionTime !== null && (
-            <p className='text-white text-sm'>Waktu eksekusi: {executionTime.toFixed(2)} ms</p>
+            <p className='text-white text-sm'>Waktu eksekusi: {executionTime.toFixed(2)} s</p>
           )}
           {currentItems.length > 0 && (
             <div className="flex flex-col items-center mt-2">
+              <div className="mt-2 text-white text-sm">
+                <p>{`${currentItems.length} of ${currentData.length} data`}</p>
+              </div>
               <div className="flex justify-center space-x-4 items-center">
                 <button
                   onClick={handlePreviousPage}
