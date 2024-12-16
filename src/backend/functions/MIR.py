@@ -2,6 +2,7 @@ import numpy as np
 import mido # MIDI Objects for Python
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor
 
 def fix_invalid_bytes(file_path, output_path):
     try:
@@ -164,6 +165,15 @@ def load_midi_file_considering_main_channel(file_path):
     except Exception as e:
         raise ValueError(f"Error processing {file_path}: {e}")
 
+def process_midi_file(file_path):
+    try:
+        fix_invalid_bytes(file_path, file_path)  # Perbaiki file jika ada byte tidak valid
+        notes = load_midi_file_considering_main_channel(file_path)
+        return notes
+    except Exception as e:
+        print(f"Gagal memproses file {file_path}: {e}")
+        return None
+
 def normalize_pitch(notes):
 
     mean_pitch = np.mean(notes)
@@ -323,24 +333,19 @@ if __name__ == "__main__":
     query_file = os.path.join(query_folder, os.listdir(query_folder)[0])
     dataset_audios = "../extracted_datasets"
 
-    processed_audios = []
-    audio_names = []
-    for root, _, files in os.walk(dataset_audios):
-        for file in files:
-            if file.endswith('.mid') or file.endswith('.midi'):
-                    audio_names.append(file)
-                    file_path = os.path.join(root, file)
-                    fixed_file_path = os.path.join(root, f"fixed_{file}")
-                    try:
-                        fix_invalid_bytes(file_path, file_path)
-                        db_notes = load_midi_file_considering_main_channel(file_path)
-                        processed_audios.append(db_notes)
-                    except Exception as e:
-                        print(f"Gagal memproses file {file_path}: {e}")
+    # Parallel processing dataset
+    file_paths = [os.path.join(root, file) for root, _, files in os.walk(dataset_audios) for file in files if file.endswith('.mid') or file.endswith('.midi')]
+
+    audio_names = [os.path.basename(file_path) for file_path in file_paths]
+    
+    with ProcessPoolExecutor() as executor:
+        results = list(executor.map(process_midi_file, file_paths))
+        
+    # Hapus hasil None dari daftar
+    processed_audios = [result for result in results if result is not None]
 
     similarities = find_most_similar_midi(query_file, processed_audios)
 
-    
     i = 1
     for idx, value in similarities:
         print(f"{i}. Audio {audio_names[idx]} dengan nilai kemiripan: {value}")
