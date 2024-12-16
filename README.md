@@ -2,7 +2,7 @@
 > Tugas Besar 2 Aljabar Linear dan Geometri
 
 <h1 align="center">Ikan dan Pisang</h1>
-<h2 align="center">Kelompok 35</h2>
+<h3 align="center">Kelompok 35</h3>
 
 
 ## Table of Contents
@@ -114,6 +114,7 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
 ![image](https://github.com/user-attachments/assets/bb7185f3-aaca-49e3-8fdc-83029704b1a4)
 
 5. Hasil
+![image](https://github.com/user-attachments/assets/09820031-80a7-40fe-992d-3f3f644056a5)
 
 
 ### Halaman About Us
