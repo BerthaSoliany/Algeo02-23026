@@ -140,7 +140,7 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
 | 13523087 | Grace Evelyn Simon |
 </br>
 
-<p align="center>
+<p align="center">
     <img src=https://github.com/user-attachments/assets/e90d9f41-2cd9-4132-8f9b-d92903dd2cd1/>
 </p>
 
