@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { GoTriangleRight } from "react-icons/go";
 import { GoTriangleLeft } from "react-icons/go";
 import { ClipLoader } from 'react-spinners';
+import { read } from 'node:fs';
 
 interface Album{
   image: string;
@@ -33,7 +34,8 @@ function Finder() {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [albumData, setAlbumData] = useState<Album[]>([]);
   const [musicData, setMusicData] = useState<Music[]>([]);
-  const itemsPerPage = 10;
+  const [mapperData, setMapperData] = useState<any[]>([]);
+  const itemsPerPage = 15;
 
   const handleButtonClick = useCallback((button: 'album' | 'music') => {
     if (loading) return;
@@ -42,83 +44,6 @@ function Finder() {
     setLoading(true);
     setExecutionTime(null); // Reset execution time
   }, [loading]);
-
-  const uploadDataset = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const response = await fetch('http://127.0.0.1:5000/upload-dataset', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Backend error response:', errorText);
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Upload successful:', data);
-        alert(`Dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
-    } catch (error) {
-        console.error('Failed to upload dataset:', error);
-        alert('Failed to upload dataset.');
-    }
-  };
-
-  const uploadQueryFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const response = await fetch('http://127.0.0.1:5000/upload-query', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Backend error response:', errorText);
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Query file uploaded successfully:', data);
-        alert(`Query file uploaded successfully! File path: ${data.file_path}`);
-    } catch (error) {
-        console.error('Failed to upload query file:', error);
-        alert('Failed to upload query file.');
-    }
-};
-
-  const fetchMirResults = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://127.0.0.1:5000/process-similarity', { method: 'POST' });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-      const data = await response.json();
-
-      if (data.success) {
-        const mappedResults: Music[] = data.results.map((result: any) => ({
-          image: 'public/ash.png',
-          name: result.file_name,
-          audioSrc: `/audio/${result.file_name}`, // Path audio file
-          similarity: result.similarity,
-        }));
-
-        setMusicData(mappedResults);
-      } else {
-        alert(`Error: ${data.error}`);
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to fetch similarity results:', error);
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -141,7 +66,8 @@ function Finder() {
           console.error('Error fetching data:', error);
         } finally {
           const endTime = performance.now(); // End time measurement
-          setExecutionTime(endTime - startTime); // Calculate execution time
+          const elapsedTime = (endTime - startTime)/1000;
+          setExecutionTime(elapsedTime); // Calculate execution time
           setLoading(false);
         }
       }
@@ -150,43 +76,80 @@ function Finder() {
     fetchData();
   }, [activeButton]);
 
-  const handleFileChange = (file: File | null, type: 'upload' | 'datasetAudio' | 'datasetImage' | 'mapper' | 'query') => {
+  const handleFileChange = (file: File | null, type: 'upload' | 'datasetAudio' | 'datasetImage' | 'mapper') => {
     if (file) {
-        if (type === 'query') {
-            uploadQueryFile(file);
-        } else if (type === 'upload') {
-            setUploadedFileName(file.name);
-            if (file.type.startsWith('image/')|| file.name.endsWith('.mid')) {
-                const url = URL.createObjectURL(file);
-                setUploadedImageUrl(url);
-            } else {
-                setUploadedImageUrl(null);
+      if (type === 'upload') {
+        setUploadedFileName(file.name);
+        // Check if the uploaded file is an image
+        if (file.type.startsWith('image/')|| file.name.endsWith('.mid')) {
+          const url = URL.createObjectURL(file);
+          setUploadedImageUrl(url);
+        } else {
+          setUploadedImageUrl(null);
           setUploadedFileName(null);
           alert('Please upload an image file');
-            }
-        } else if (type === 'datasetAudio') {
+        }
+      } else if (type === 'datasetAudio') {
         if (file.type.startsWith('audio/') || file.name.endsWith('.mid') || file.name.endsWith('.zip')) {
-              setDatasetAudioFileName(file.name);
+          setDatasetAudioFileName(file.name);
         } else {
           alert('Please upload an audio file');
         }
-            uploadDataset(file);
-        } else if (type === 'datasetImage') {
+      } else if (type === 'datasetImage') {
         if (file.type.startsWith('image/') || file.name.endsWith('.zip')) {
-              setDatasetImageFileName(file.name);
+          setDatasetImageFileName(file.name);
         } else {
           alert('Please upload an image file');
         }
-        } else if (type === 'mapper') {
+      } else if (type === 'mapper') {
         if (file.name.endsWith('.json') || file.name.endsWith('.txt')) {
-              setMapperFileName(file.name);
+          setMapperFileName(file.name);
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const mapperData = JSON.parse(e.target?.result as string);
+            setMapperData(mapperData);
+          };
+          reader.readAsText(file);
         } else {
           alert('Please upload a JSON or TXT file');
         }
-        }
+      }
     }
-};
+  };
   
+  const handleMakeMapper = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/generate_mapper_recursive', {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to generate mapper');
+      }
+      const data = await response.json();
+      console.log('Mapper:', data.mapper);
+  
+      // Muat mapper ke state setelah berhasil dibuat
+      await handleLoadMapper();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+   
+
+  const handleLoadMapper = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/get_mapper'); // Endpoint untuk mendapatkan mapper.json
+      if (!response.ok) {
+        throw new Error('Failed to fetch mapper');
+      }
+      const data: Music[] = await response.json();
+      setMapperData(data); // Simpan ke state mapperData
+    } catch (error) {
+      console.error('Error loading mapper:', error);
+    }
+  };
+  
+
   const currentData = activeButton === 'album' ? albumData : activeButton === 'music' ? musicData : [];
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
 
@@ -221,27 +184,16 @@ function Finder() {
             )}
             {uploadedFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">{uploadedFileName}</p>}
           </div>
-          <div className="flex flex-col items-center space-y-2">
-            <Button
-              text="Upload"
-              onFileChange={(file) => handleFileChange(file, 'query')}
-            />
-            {uploadedFileName && (
-                <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
-                  Query File: {uploadedFileName}
-                </p>
-              )}
-          </div>
-          <div className="flex flex-col items-center space-y-2">
+          <Button
+            text="Upload"
+            onFileChange={(file) => handleFileChange(file, "upload")}
+          />
+          <div className='flex flex-col items-center space-y-2'>
             <Button
               text="Dataset Audio"
               onFileChange={(file) => handleFileChange(file, 'datasetAudio')}
             />
-            {datasetAudioFileName && (
-              <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
-                Audio: {datasetAudioFileName}
-              </p>
-            )}
+            {datasetAudioFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Audio: {datasetAudioFileName}</p>}
           </div>
           <div className='flex flex-col items-center space-y-2'>
             <Button
@@ -257,12 +209,10 @@ function Finder() {
             />
             {mapperFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Mapper: {mapperFileName}</p>}
           </div>
-          <div className="flex flex-col items-center space-y-2">
-            <Button
-              text="Process MIR"
-              onClick={fetchMirResults}
-            />
-          </div>
+          <Button
+            text="Make Mapper"
+            onClick={handleMakeMapper}
+          />
         </div>
         <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
           <div className="flex flex-row justify-center items-center mt-1 space-x-5">
@@ -284,7 +234,7 @@ function Finder() {
               <ClipLoader color="#ffffff" loading={loading} size={50} />
             </div>
           ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 flex-grow">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4 flex-grow">
             {currentItems.length > 0 ? (
               currentItems.map((item, index) => (
                 activeButton === 'album' ? (
@@ -297,20 +247,36 @@ function Finder() {
                 ) : (
                   <MusicCard
                     key={index}
-                    image={item.image}
-                    name={item.name}
-                    audioSrc={'audioSrc' in item ? (item as Music).audioSrc : ''}
-                    similarity={item.similarity}
+                    image={item.image}      // Gambar yang diperoleh dari mapper
+                    name={item.name}        // Nama dari API
+                    audioSrc={'audioSrc' in item ? (item as Music).audioSrc : ''} // Audio file dari API
+                    similarity={item.similarity} // Similarity yang diperoleh dari mapper
                   />
+                  // <MusicCard
+                  //   key={index}
+                  //   image={'image' in item ? (item as Music).image : ''}
+                  //   name={item.name}
+                  //   audioSrc={'audioSrc' in item ? (item as Music).audioSrc : ''}
+                  //   similarity={item.similarity}
+                  // />
                 )
               ))
             ) : (
               <p></p>
+              // mapperData.map((mapperItem, index) => (
+              //   <MusicCard
+              //     key={index}
+              //     image={mapperItem.pic_name}
+              //     name={`Music ${index + 1}`} // Optional: Buat nama default
+              //     audioSrc={mapperItem.audio_file}
+              //     similarity={100} // Optional: Tetapkan nilai default
+              //   />
+              // ))
             )}
           </div>
           )}
           {!loading && executionTime !== null && (
-            <p className='text-white text-sm'>Waktu eksekusi: {executionTime.toFixed(2)} ms</p>
+            <p className='text-white text-sm'>Waktu eksekusi: {executionTime.toFixed(2)} s</p>
           )}
           {currentItems.length > 0 && (
             <div className="flex flex-col items-center mt-2">

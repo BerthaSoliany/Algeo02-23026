@@ -1,33 +1,49 @@
 import os
 import json
 
-def generate_mapper_json(images_folder, audios_folder, output_file):
-    # Pastikan folder ada
-    if not os.path.exists(images_folder):
-        print(f"Error: Folder {images_folder} does not exist.")
-        return
-    
-    if not os.path.exists(audios_folder):
-        print(f"Error: Folder {audios_folder} does not exist.")
-        return
+def find_files_recursively(directory, extensions):
+    """
+    Recursively find all files in the directory with specific extensions.
 
-    # Ambil file dari folder
-    images = sorted([f for f in os.listdir(images_folder) if os.path.isfile(os.path.join(images_folder, f))])
-    audios = sorted([f for f in os.listdir(audios_folder) if os.path.isfile(os.path.join(audios_folder, f))])
+    Args:
+        directory (str): The root directory to search.
+        extensions (tuple): File extensions to look for.
 
-    # Pastikan ada file di kedua folder
-    if not images or not audios:
-        print("Error: One of the folders is empty.")
-        return
+    Returns:
+        list: List of found file paths.
+    """
+    files = []
+    for root, _, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.lower().endswith(extensions):
+                files.append(os.path.join(root, filename))
+    return files
 
-    # Buat data mapper (gunakan gambar berulang jika jumlah audio lebih banyak)
-    mapper_data = []
-    for i, audio in enumerate(audios):
-        pic_name = images[i % len(images)]  # Circular mapping
-        mapper_data.append({"audio_file": audio, "pic_name": pic_name})
+def generate_mapper_from_dataset_recursive(image_dir, audio_dir, output_file):
+    # Find all images and audios recursively
+    images = sorted(find_files_recursively(image_dir, ('.png', '.jpg', '.jpeg')))
+    audios = sorted(find_files_recursively(audio_dir, ('.mid',)))
 
-    # Tulis ke file JSON
-    with open(output_file, 'w') as mapper_file:
-        json.dump(mapper_data, mapper_file, indent=4)  # Menyimpan dengan indentasi 4 untuk keterbacaan
+    # Normalize file paths to file names for mapper
+    mapper = []
+    for idx, audio_file in enumerate(audios):
+        image_file = images[idx % len(images)]  # Repeat images if fewer than audios
+        mapper.append({
+            "image": os.path.relpath(image_file, start=image_dir),
+            "audioSrc": os.path.relpath(audio_file, start=image_dir)
+        })
 
-    print(f"Mapper file '{output_file}' generated successfully.")
+    # Write the mapper to a JSON file
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, 'w') as f:
+        json.dump(mapper, f, indent=4)
+
+    return mapper
+
+# Example usage
+image_directory = './test/images'
+audio_directory = './test/audios'
+output_mapper_file = './test/mapper.json'
+
+mapper = generate_mapper_from_dataset_recursive(image_directory, audio_directory, output_mapper_file)
+# print("Mapper generated:", mapper)

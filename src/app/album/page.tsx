@@ -3,7 +3,8 @@ import NavBar from '@/src/components/NavBar'
 import Playlist from '@/src/components/Playlist'
 import React , { useEffect, useState } from 'react'
 import { ClipLoader } from 'react-spinners';
-import { GoChevronLeft, GoChevronRight } from 'react-icons/go';
+import { GoChevronLeft, GoChevronRight, GoArrowLeft } from 'react-icons/go';
+import { useParams, useLocation } from 'react-router-dom';
 
 
 interface PlaylistData {
@@ -13,7 +14,8 @@ interface PlaylistData {
 }
 
 
-function Album( ) {
+function Album() {
+  const { albumName } = useParams();
   const [playlistData, setPlaylistData] = useState<PlaylistData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ function Album( ) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://127.0.0.1:5000/api/playlist');
+        const response = await fetch(`http://127.0.0.1:5000/api/playlist?album=${albumName}`);
         const data = await response.json();
         setPlaylistData(data);
       } catch (error) {
@@ -33,8 +35,10 @@ function Album( ) {
       }
     };
 
-    fetchData();
-  }, []);
+    if (albumName) {
+      fetchData();
+    }
+  }, [albumName]);
 
   const totalPages = Math.ceil(playlistData.length / itemsPerPage);
 
@@ -58,11 +62,18 @@ function Album( ) {
     <div className="relative bg-[url('/image1.png')] bg-cover bg-center min-h-screen flex flex-col p-2 md:p-4 font-custom items-center justify-center">
       <NavBar/>
       <div className="mt-2 bg-black bg-opacity-50 rounded-3xl w-[90%] min-h-screen flex flex-col items-center p-0">
-        <div className="bg-black bg-opacity-50 rounded-3xl py-5 px-10 md:px-20 w-full h-[220px] flex flex-row items-center items-start space-x-10">
-          <img src="./sweetener.jpg" alt="Album" className="w-[30%] h-auto md:w-[20%] md:h-auto" />
+        <div className="bg-black bg-opacity-50 rounded-3xl p-20 w-full h-[220px] flex flex-row items-center items-start space-x-10">
+          <div className="absolute left-[7%] top-[17%]">
+            <a href="/finder">
+            <button>
+              <GoArrowLeft className="w-7 h-7 text-white"/>
+            </button>
+            </a>
+          </div>
+          <img src={`./${albumName}`} alt="Album" className="w-[30%] h-auto md:w-[20%] md:h-auto" />
           <div className="ml-5 flex flex-col space-y-4 truncate overflow-hidden whitespace-nowrap">
             <h1 className="text-white text-lg">Playlist</h1>
-            <p className="text-white text-3xl">Nama lgu</p>
+            <p className="text-white text-3xl">{albumName}</p>
           </div>
         </div>
         <p className="text-white text-xl mt-5 -ml-[51%]">Songs</p>
@@ -94,7 +105,7 @@ function Album( ) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Album
+export default Album;

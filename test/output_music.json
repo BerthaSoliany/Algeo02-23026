@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Theme-From-'Beauty-And-The-Beast'-(Walt-Disney).mid",
+        "similarity": 100,
+        "image": null,
+        "audioSrc": null
+    },
+    {
+        "name": "I_Want_It_That_Way.mid",
+        "similarity": 57.91,
+        "image": "I_Want_It_That_Way.jpg",
+        "audioSrc": "..\\audios\\I_Want_It_That_Way.mid"
+    }
+]
