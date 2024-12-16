@@ -35,6 +35,8 @@ EXTRACT_FOLDER = './extracted_datasets'
 DATASET_UPLOAD_IMAGE_FOLDER = './uploaded_datasets_image'
 EXTRACT_IMAGE_FOLDER = './extracted_datasets_image'
 
+# Buat direktori yang dibutuhkan jika belum ada
+os.makedirs('./test', exist_ok=True)  # Untuk menyimpan mapper.json
 os.makedirs(QUERY_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(DATASET_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(EXTRACT_FOLDER, exist_ok=True)
@@ -43,6 +45,8 @@ os.makedirs(EXTRACT_IMAGE_FOLDER, exist_ok=True)
 
 # bersihkan direktori setiap upload query atau dataset baru
 def clear_directory(directory_path):
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path, exist_ok=True)  # Pastikan direktori ada
     for filename in os.listdir(directory_path):
         file_path = os.path.join(directory_path, filename)
         try:
@@ -54,30 +58,21 @@ def clear_directory(directory_path):
             print(f"Failed to delete {file_path}. Reason: {e}")
 
 # endpoint untuk mengunggah dataset
-@app.route('/upload-dataset', methods=['GET', 'POST'])
+@app.route('/upload-dataset', methods=['POST'])
 def upload_dataset():
-    if request.method == 'GET':
-        return "Upload dataset endpoint is active!"
-
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-
-    file = request.files['file']
-
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    if not file.filename.endswith('.zip'):
-        return jsonify({'error': 'Only ZIP files are allowed'}), 400
-
     clear_directory(DATASET_UPLOAD_FOLDER)
     clear_directory(EXTRACT_FOLDER)
+    clear_directory('./test')  # Pastikan direktori mapper dibuat
 
-    zip_path = os.path.join(DATASET_UPLOAD_FOLDER, file.filename)
-    try:
-        file.save(zip_path)
-    except Exception as e:
-        return jsonify({'error': 'Failed to save file'}), 500
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+
+    file = request.files['file']
+    if file.filename == '' or not file.filename.endswith('.zip'):
+        return jsonify({'error': 'Only ZIP files are allowed'}), 400
+
+    zip_path = os.path.join(DATASET_UPLOAD_FOLDER, secure_filename(file.filename))
+    file.save(zip_path)
 
     extract_path = os.path.join(EXTRACT_FOLDER, os.path.splitext(file.filename)[0])
     os.makedirs(extract_path, exist_ok=True)
@@ -87,32 +82,37 @@ def upload_dataset():
     except zipfile.BadZipFile:
         return jsonify({'error': 'Invalid ZIP file'}), 400
 
-    # Generate mapper baru setelah dataset audio diunggah
-    mapper_file = './test/mapper.json'
     image_directory = './extracted_datasets_image'
-    generate_mapper_from_dataset_recursive(image_directory, EXTRACT_FOLDER, mapper_file)
+    mapper_file = './test/mapper.json'
 
-    return jsonify({
-        'message': 'Dataset uploaded and extracted successfully',
-        'extracted_folder': extract_path,
-        'mapper_file': mapper_file
-    })
+    if os.path.exists(image_directory) and os.listdir(image_directory):
+        generate_mapper_from_dataset_recursive(image_directory, EXTRACT_FOLDER, mapper_file)
+        return jsonify({
+            'message': 'Dataset uploaded and mapper generated successfully',
+            'extracted_folder': extract_path,
+            'mapper_file': mapper_file
+        })
+    else:
+        return jsonify({
+            'message': 'Dataset uploaded but no images found. Mapper not generated.',
+            'extracted_folder': extract_path
+        })
 
 # endpoint untuk mengunggah dataset gambar
 @app.route('/upload-dataset-image', methods=['POST'])
 def upload_dataset_image():
+    clear_directory(DATASET_UPLOAD_IMAGE_FOLDER)
+    clear_directory(EXTRACT_IMAGE_FOLDER)
+    clear_directory('./test')  # Pastikan direktori mapper dibuat
+
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
-
     if file.filename == '' or not file.filename.endswith('.zip'):
         return jsonify({'error': 'Only ZIP files are allowed'}), 400
 
-    clear_directory(DATASET_UPLOAD_IMAGE_FOLDER)
-    clear_directory(EXTRACT_IMAGE_FOLDER)
-
-    zip_path = os.path.join(DATASET_UPLOAD_IMAGE_FOLDER, file.filename)
+    zip_path = os.path.join(DATASET_UPLOAD_IMAGE_FOLDER, secure_filename(file.filename))
     file.save(zip_path)
 
     extract_path = os.path.join(EXTRACT_IMAGE_FOLDER, os.path.splitext(file.filename)[0])
@@ -123,15 +123,21 @@ def upload_dataset_image():
     except zipfile.BadZipFile:
         return jsonify({'error': 'Invalid ZIP file'}), 400
 
-    # Generate mapper baru setelah dataset image diunggah
+    audio_directory = './extracted_datasets'
     mapper_file = './test/mapper.json'
-    generate_mapper_from_dataset_recursive(EXTRACT_IMAGE_FOLDER, './extracted_datasets', mapper_file)
 
-    return jsonify({
-        'message': 'Dataset image uploaded and extracted successfully',
-        'extracted_folder': extract_path,
-        'mapper_file': mapper_file
-    })
+    if os.path.exists(audio_directory) and os.listdir(audio_directory):
+        generate_mapper_from_dataset_recursive(EXTRACT_IMAGE_FOLDER, audio_directory, mapper_file)
+        return jsonify({
+            'message': 'Image dataset uploaded and mapper generated successfully',
+            'extracted_folder': extract_path,
+            'mapper_file': mapper_file
+        })
+    else:
+        return jsonify({
+            'message': 'Image dataset uploaded but no audio dataset found. Mapper not generated.',
+            'extracted_folder': extract_path
+        })
 
 # endpoint untuk mengunggah query
 @app.route('/upload-query', methods=['POST'])
@@ -162,7 +168,6 @@ def upload_query():
 # endpoint untuk menghitung similarity
 similarity_results = None
 @app.route('/process-similarity', methods=['POST'])
-@app.route('/process-similarity', methods=['POST'])
 def process_similarity():
     global similarity_results
     try:
@@ -171,8 +176,9 @@ def process_similarity():
         audio_directory = './extracted_datasets'
         mapper_file = './test/mapper.json'
 
-        # Generate mapper baru
-        generate_mapper_from_dataset_recursive(image_directory, audio_directory, mapper_file)
+        # Pastikan direktori dan file yang diperlukan ada
+        if not os.path.exists('./test'):
+            os.makedirs('./test', exist_ok=True)
 
         # Baca query file
         if not os.listdir(QUERY_UPLOAD_FOLDER):
@@ -203,19 +209,20 @@ def process_similarity():
         # Temukan tingkat kemiripan menggunakan query file
         similarities = find_most_similar_midi(query_file, processed_audios)
 
-        # Load mapper.json
-        with open(mapper_file, 'r') as f:
-            mapper_data = json.load(f)
-
-        # Filter hasil berdasarkan threshold dan tambahkan informasi gambar dari mapper
+        # Filter hasil berdasarkan threshold
         threshold = 0.55
         filtered_results = []
         for i, (idx, value) in enumerate(similarities):
             if value >= threshold:
                 audio_name = audio_names[idx]
-                # Cari gambar yang terkait di mapper
-                matched = next((item for item in mapper_data if audio_name in item['audioSrc']), None)
-                image_path = f"http://127.0.0.1:5000/extracted_datasets_image/{matched['image']}" if matched else None
+
+                # Jika mapper.json ada, tambahkan informasi gambar
+                image_path = None
+                if os.path.exists(mapper_file):
+                    with open(mapper_file, 'r') as f:
+                        mapper_data = json.load(f)
+                        matched = next((item for item in mapper_data if audio_name in item['audioSrc']), None)
+                        image_path = f"http://127.0.0.1:5000/extracted_datasets_image/{matched['image']}" if matched else None
 
                 filtered_results.append({
                     "rank": i + 1,
