@@ -32,10 +32,10 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
     python -m venv venv
 
 4. Aktivasi virtual enviroment
-   Untuk windows:
+  Untuk windows:
     ```sh
     venv\Scripts\activate
-   Untuk Unix-like Shell:
+  Untuk Unix-like Shell:
     ```sh
     source venv\Scripts\activate
 
