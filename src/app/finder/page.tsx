@@ -33,7 +33,7 @@ function Finder() {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [albumData, setAlbumData] = useState<any[]>([]);
   const [musicData, setMusicData] = useState<Music[]>([]);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
 
   const handleButtonClick = (button: 'album' | 'music') => {
     setActiveButton(button);
@@ -66,6 +66,32 @@ function Finder() {
         alert('Failed to upload dataset.');
     }
   };
+
+  const uploadDatasetImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/upload-dataset-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Image dataset uploaded successfully:', data);
+      alert(`Image dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
+    } catch (error) {
+      console.error('Failed to upload image dataset:', error);
+      alert('Failed to upload image dataset.');
+    }
+  };
+
 
   const uploadQueryFile = async (file: File) => {
     const formData = new FormData();
@@ -119,6 +145,32 @@ function Finder() {
     }
   };
 
+  const fetchImageSimilarityResults = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://127.0.0.1:5000/process-image-similarity', { method: 'POST' });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+  
+      const data = await response.json();
+  
+      if (data.success) {
+        const mappedResults = data.results.map((result: any) => ({
+          image: `http://127.0.0.1:5000/extracted_datasets_image/${result.file_name}`,
+          name: result.file_name,
+          similarity: result.similarity,
+        }));
+  
+        setAlbumData(mappedResults);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch image similarity results:', error);
+      setLoading(false);
+    }
+  };  
+
   // replace this with the real time data fetching
   useEffect(() => {
     const fetchData = async () => {
@@ -152,6 +204,8 @@ function Finder() {
 
   const handleFileChange = (file: File | null, type: 'upload' | 'datasetAudio' | 'datasetImage' | 'mapper' | 'query') => {
     if (file) {
+        const fileName = file.name;
+        const fileExtension = fileName.split('.').pop()?.toLowerCase();
         if (type === 'query') {
             uploadQueryFile(file);
         } else if (type === 'upload') {
@@ -167,6 +221,7 @@ function Finder() {
             uploadDataset(file);
         } else if (type === 'datasetImage') {
             setDatasetImageFileName(file.name);
+            uploadDatasetImage(file);
         } else if (type === 'mapper') {
             setMapperFileName(file.name);
         }
@@ -230,12 +285,16 @@ function Finder() {
               </p>
             )}
           </div>
-          <div className='flex flex-col items-center space-y-2'>
+          <div className="flex flex-col items-center space-y-2">
             <Button
               text="Dataset Image"
               onFileChange={(file) => handleFileChange(file, 'datasetImage')}
             />
-            {datasetImageFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Image: {datasetImageFileName}</p>}
+            {datasetImageFileName && (
+              <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                Image Dataset: {datasetImageFileName}
+              </p>
+            )}
           </div>
           <div className='flex flex-col items-center space-y-2'>
             <Button
@@ -248,6 +307,12 @@ function Finder() {
             <Button
               text="Process MIR"
               onClick={fetchMirResults}
+            />
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              text="Process AIR"
+              onClick={fetchImageSimilarityResults}
             />
           </div>
         </div>

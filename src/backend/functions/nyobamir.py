@@ -1,8 +1,10 @@
+# import library yang dibutuhkan
 import numpy as np
-import mido # MIDI Objects for Python
+import mido
 import os
 import time
 
+# memperbaiki data byte yang tidak valid (tidak dalam rentang 0-127)
 def fix_invalid_bytes(file_path, output_path):
     try:
         midi = mido.MidiFile(file_path)
@@ -23,113 +25,15 @@ def fix_invalid_bytes(file_path, output_path):
     except Exception as e:
         print(f"Error while fixing file {file_path}: {e}")
 
-# 1. Pemrosesan Audio, Normalisasi Pitch, dan Windowing, fokus pada track melodi utama di Channel 1
-def load_midi_file(file_path, channel = 1):
-    
-    # membaca MIDI file dengan library mido (MIDI file consist of track, pesan MIDI, dan metadata)
-    midi = mido.MidiFile(file_path) 
-    
-    # list kosong yang akan diisi dengan note-note melodi dari Channel 1
-    melody = [] 
-    
-    # iterasi setiap track dalam MIDI file dengan setiap MIDI file dapat berisi beberapa track (contohnya melodi utama, harmoni, drum, dsb)
-    for track in midi.tracks:
-
-        # iterasi setiap pesan MIDI dalam track (contohnya perubahan tempo, note, kontrol instrumen, dsb)
-        for msg in track:
-
-            # jika pesan MIDI adalah note_on (note dimainkan) dan pada Channel 1 (MIDI menggunakan indeks berbasis 0)
-            if msg.type == 'note_on' and msg.channel == channel - 1:
-
-                # tambahkan note (setiap note mewakili tinggi nada tertentu) ke list melody
-                melody.append(msg.note)
-    
-    # kondisi apabila note pada channel 1 kosong
-    if len(melody) == 0:
-        raise ValueError(f"File MIDI {file_path} tidak memiliki note pada channel {channel}.")
-
-    return np.array(melody)
-
-def load_midi_file_considering_channels(file_path):
-    
-    # Membaca file MIDI dengan library mido
-    midi = mido.MidiFile(file_path)
-
-    # Dictionary untuk menyimpan jumlah note per channel di setiap track
-    channel_note_counts = {}
-
-    # Iterasi setiap track dalam file MIDI
-    for track in midi.tracks:
-        
-        # Iterasi setiap pesan MIDI dalam track
-        for msg in track:
-            
-            # Cek jika pesan MIDI adalah 'note_on'
-            if msg.type == 'note_on':
-                
-                # Ambil channel dari pesan
-                channel = msg.channel
-
-                # Jika channel belum ada dalam dictionary, buat entry baru
-                if channel not in channel_note_counts:
-                    channel_note_counts[channel] = []
-                
-                # Tambahkan note ke list untuk channel yang sesuai
-                channel_note_counts[channel].append(msg.note)
-
-    # Cari channel dengan jumlah note terbanyak
-    max_channel = max(channel_note_counts, key=lambda x: len(channel_note_counts[x]))
-
-    # Mengambil note dengan jumlah terbanyak
-    return np.array(channel_note_counts[max_channel])
-
-def load_midi_file_considering_duration(file_path, main_channel=None):
-    midi = mido.MidiFile(file_path)
-    channel_durations = {}
-    
-    for track in midi.tracks:
-        active_notes = {}
-        current_time = 0
-        
-        for msg in track:
-            current_time += msg.time
-            
-            if msg.type == 'note_on' and msg.velocity > 0:
-                channel = msg.channel
-                active_notes.setdefault(channel, []).append(current_time)
-                
-            elif msg.type in ['note_off', 'note_on'] and msg.velocity == 0:
-                channel = msg.channel
-                if channel in active_notes and active_notes[channel]:
-                    start_time = active_notes[channel].pop(0)
-                    duration = current_time - start_time
-                    channel_durations[channel] = channel_durations.get(channel, 0) + duration
-    
-    if main_channel is None:
-        if channel_durations:
-            main_channel = max(channel_durations, key=channel_durations.get)
-            print(f"Longest active channel: {main_channel + 1}")
-        else:
-            raise ValueError(f"No active channels found in {file_path}.")
-
-    melody = []
-    for track in midi.tracks:
-        for msg in track:
-            if msg.type == 'note_on' and msg.channel == main_channel and msg.velocity > 0:
-                melody.append(msg.note)
-    
-    if not melody:
-        raise ValueError(f"File {file_path} has no notes in channel {main_channel + 1}.")
-
-    return np.array(melody)
-
-def load_midi_file_considering_main_channel(file_path):
+# 1. Pemrosesan Audio, Normalisasi Pitch, dan Windowing
+def load_midi_file(file_path):
     def find_main_channel(file_path):
         midi = mido.MidiFile(file_path)
         for track in midi.tracks:
             for msg in track:
-                if msg.type == 'note_on' and msg.channel == 0:
+                if msg.type == 'note_on' and msg.channel == 0: # jika ada channel 1 otomatis menjadi main channel
                     return 0
+        # jika tidak ditemukan channel 1
         potential_main_channels = []
         fallback_channels = []
         for track in midi.tracks:
@@ -146,6 +50,7 @@ def load_midi_file_considering_main_channel(file_path):
                 notes = data["notes"]
                 pitch_range = (min(data["pitches"]) if data["pitches"] else None, 
                                max(data["pitches"]) if data["pitches"] else None)
+                # memilih channel yang memiliki notes > 50 dan pitch range 60-80 (berkemungkinan sebagai main channel)
                 if notes > 50 and pitch_range[0] >= 60 and pitch_range[1] <= 80:
                     potential_main_channels.append((channel, notes, pitch_range))
                 else:
@@ -345,7 +250,7 @@ if __name__ == "__main__":
     for idx, value in similarities:
         print(f"{i}. Audio {audio_names[idx]} dengan nilai kemiripan: {value}")
         i += 1
-        if (value < 0.55):
+        if (value < 0.8):
             break
 
     end = time.time()
