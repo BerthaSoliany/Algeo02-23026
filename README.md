@@ -24,20 +24,24 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
     git clone https://github.com/BerthaSoliany/Algeo02-23026.git
 
 2. Ubah directori menuju `src/backend`
-    ```sh
+    ```
     cd src
+    ```
+    ```
+    cd backend
+    ```
 
 3. Buat virtual enviroment
     ```sh
     python -m venv venv
 
 4. Aktivasi virtual enviroment</br>
-  Untuk windows:
+    Untuk windows:
     ```
     venv\Scripts\activate
     ```
   </br>
-  Untuk Unix-like Shell:
+    Untuk Unix-like Shell:
     ```
     source venv\Scripts\activate
     ```
