@@ -45,6 +45,134 @@ function Finder() {
     setExecutionTime(null); // Reset execution time
   }, [loading]);
 
+  const uploadDataset = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/upload-dataset', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Backend error response:', errorText);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Upload successful:', data);
+        alert(`Dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
+    } catch (error) {
+        console.error('Failed to upload dataset:', error);
+        alert('Failed to upload dataset.');
+    }
+  };
+
+  const uploadDatasetImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/upload-dataset-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Image dataset uploaded successfully:', data);
+      alert(`Image dataset uploaded successfully! Extracted folder: ${data.extracted_folder}`);
+    } catch (error) {
+      console.error('Failed to upload image dataset:', error);
+      alert('Failed to upload image dataset.');
+    }
+  };
+
+
+  const uploadQueryFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/upload-query', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Backend error response:', errorText);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Query file uploaded successfully:', data);
+        alert(`Query file uploaded successfully! File path: ${data.file_path}`);
+    } catch (error) {
+        console.error('Failed to upload query file:', error);
+        alert('Failed to upload query file.');
+    }
+};
+
+  const fetchMirResults = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://127.0.0.1:5000/process-similarity', { method: 'POST' });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+      const data = await response.json();
+
+      if (data.success) {
+        const mappedResults: Music[] = data.results.map((result: any) => ({
+          image: 'public/ash.png',
+          name: result.file_name,
+          audioSrc: `/audio/${result.file_name}`, // Path audio file
+          similarity: result.similarity,
+        }));
+
+        setMusicData(mappedResults);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch similarity results:', error);
+      setLoading(false);
+    }
+  };
+
+  const fetchImageSimilarityResults = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://127.0.0.1:5000/process-image-similarity', { method: 'POST' });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+  
+      const data = await response.json();
+      if (data.success) {
+        const mappedResults = data.results.map((result: any) => ({
+          image: `http://127.0.0.1:5000/extracted_datasets_image/${result.image_path}`, // URL lengkap gambar
+          name: result.file_name, // Nama file untuk ditampilkan
+          similarity: result.similarity, // Similarity
+        }));
+  
+        setAlbumData(mappedResults);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch image similarity results:', error);
+      setLoading(false);
+    }
+  };  
+
   useEffect(() => {
     const fetchData = async () => {
       if (activeButton) {
@@ -78,40 +206,36 @@ function Finder() {
 
   const handleFileChange = (file: File | null, type: 'upload' | 'datasetAudio' | 'datasetImage' | 'mapper') => {
     if (file) {
-      if (type === 'upload') {
-        setUploadedFileName(file.name);
-        // Check if the uploaded file is an image/mid
-        if (file.type.startsWith('image/')|| file.name.endsWith('.mid')) {
-          const url = URL.createObjectURL(file);
-          setUploadedImageUrl(url);
-        } else {
-          setUploadedImageUrl(null);
-          setUploadedFileName(null);
-          alert('Please upload an image file');
-        }
-      } else if (type === 'datasetAudio') {
-        if (file.type.startsWith('audio/') || file.name.endsWith('.mid') || file.name.endsWith('.zip')) {
-          setDatasetAudioFileName(file.name);
-        } else {
-          alert('Please upload an audio file');
-        }
-      } else if (type === 'datasetImage') {
-        if (file.type.startsWith('image/') || file.name.endsWith('.zip')) {
-          setDatasetImageFileName(file.name);
-        } else {
-          alert('Please upload an image file');
-        }
-      } else if (type === 'mapper') {
-        if (file.name.endsWith('.json') || file.name.endsWith('.txt')) {
-          setMapperFileName(file.name);
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const mapperData = JSON.parse(e.target?.result as string);
-            setMapperData(mapperData);
-          };
-          reader.readAsText(file);
-        } else {
-          alert('Please upload a JSON or TXT file');
+        const fileName = file.name;
+        const fileExtension = fileName.split('.').pop()?.toLowerCase();
+        if (type === 'query') {
+            uploadQueryFile(file);
+        } else if (type === 'upload') {
+            setUploadedFileName(file.name);
+            if (file.type.startsWith('image/')) {
+                const url = URL.createObjectURL(file);
+                setUploadedImageUrl(url);
+            } else {
+                setUploadedImageUrl(null);
+            }
+        } else if (type === 'datasetAudio') {
+            setDatasetAudioFileName(file.name);
+            uploadDataset(file);
+        } else if (type === 'datasetImage') {
+            setDatasetImageFileName(file.name);
+            uploadDatasetImage(file);
+        } else if (type === 'mapper') {
+          if (file.name.endsWith('.json') || file.name.endsWith('.txt')) {
+            setMapperFileName(file.name);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const mapperData = JSON.parse(e.target?.result as string);
+              setMapperData(mapperData);
+            };
+            reader.readAsText(file);
+          } else {
+            alert('Please upload a JSON or TXT file');
+          }
         }
       }
     }
@@ -142,8 +266,6 @@ function Finder() {
     }
   };
   
-   
-
   const handleLoadMapper = async () => {
     try {
       const response = await fetch('http://127.0.0.1:5000/api/get_mapper'); // Endpoint untuk mendapatkan mapper.json
@@ -156,7 +278,6 @@ function Finder() {
       console.error('Error loading mapper:', error);
     }
   };
-  
 
   const currentData = activeButton === 'album' ? albumData : activeButton === 'music' ? musicData : [];
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
@@ -181,32 +302,69 @@ function Finder() {
     <div className="relative bg-[url('/image1.png')] bg-cover bg-center min-h-screen flex flex-col p-2 md:p-4 font-custom">
       <NavBar />
       <div className="flex flex-col space-y-2 md:flex-row md:space-x-5 text-xs items-center">
-        <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:max-w-[320px] min-h-screen flex flex-col justify-center items-center space-y-2">
-          <div className="flex flex-col space-y-1 items-center">
-            {uploadedImageUrl && (
-              <div className="w-[240px] h-[140px] p-2 bg-gray-800 rounded-md flex items-center justify-center">
-                <img src={uploadedImageUrl} alt="Uploaded" className="w-full h-full object-contain" />
+        <div className="mt-2 bg-black bg-opacity-50 rounded-md py-2 px-2 w-[90%] md:max-w-[320px] min-h-screen flex flex-col justify-center items-center space-y-2">
+          {/* search dgn click album/music */}
+          {/* mapper dibuat sendiri */}
+          <div className="flex flex-col items-center space-y-2">
+            {/* Tampilkan pratinjau gambar dan nama file di atas tombol */}
+            {uploadedFileName && (
+              <div className="flex flex-col items-center space-y-2">
+                {/* Jika file adalah gambar, tampilkan pratinjau */}
+                {uploadedFileName.match(/\.(jpg|jpeg|png|gif)$/i) && uploadedImageUrl && (
+                  <div className="w-[240px] h-[140px] p-2 bg-gray-800 rounded-md flex items-center justify-center">
+                    <img
+                      src={uploadedImageUrl} // URL objek lokal untuk menampilkan gambar
+                      alt="Uploaded Preview"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
+                {/* Selalu tampilkan nama file */}
+                <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                  {uploadedFileName}
+                </p>
               </div>
             )}
-            {uploadedFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">{uploadedFileName}</p>}
+            {/* Tombol Upload */}
+            <Button
+              text="Upload"
+              onFileChange={(file) => {
+                if (file) {
+                  handleFileChange(file, 'query'); // Kirim file ke backend menggunakan fungsi yang sudah ada
+                  setUploadedFileName(file.name); // Simpan nama file ke state
+                  if (file.type.startsWith('image/')) {
+                    // Jika file adalah gambar, buat URL untuk pratinjau
+                    const url = URL.createObjectURL(file);
+                    setUploadedImageUrl(url);
+                  } else {
+                    // Jika bukan gambar, kosongkan URL gambar
+                    setUploadedImageUrl(null);
+                  }
+                }
+              }}
+            />
           </div>
-          <Button
-            text="Upload"
-            onFileChange={(file) => handleFileChange(file, "upload")}
-          />
-          <div className='flex flex-col items-center space-y-2'>
+          <div className="flex flex-col items-center space-y-2">
             <Button
               text="Dataset Audio"
               onFileChange={(file) => handleFileChange(file, 'datasetAudio')}
             />
-            {datasetAudioFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Audio: {datasetAudioFileName}</p>}
+            {datasetAudioFileName && (
+              <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                Audio: {datasetAudioFileName}
+              </p>
+            )}
           </div>
-          <div className='flex flex-col items-center space-y-2'>
+          <div className="flex flex-col items-center space-y-2">
             <Button
               text="Dataset Image"
               onFileChange={(file) => handleFileChange(file, 'datasetImage')}
             />
-            {datasetImageFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Image: {datasetImageFileName}</p>}
+            {datasetImageFileName && (
+              <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">
+                Image Dataset: {datasetImageFileName}
+              </p>
+            )}
           </div>
           <div className='flex flex-col items-center space-y-2'>
             <Button
@@ -215,11 +373,18 @@ function Finder() {
             />
             {mapperFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Mapper: {mapperFileName}</p>}
           </div>
-          {/* ini buat yg otomatis mapper kalo g unggap mapper */}
-          {/* <Button
-            text="Process"
-            onClick={handleMakeMapper}
-          /> */}
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              text="Process MIR"
+              onClick={fetchMirResults}
+            />
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              text="Process AIR"
+              onClick={fetchImageSimilarityResults}
+            />
+          </div>
         </div>
         <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
           <div className="flex flex-row justify-center items-center mt-1 space-x-5">
