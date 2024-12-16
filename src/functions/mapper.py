@@ -41,9 +41,9 @@ def generate_mapper_from_dataset_recursive(image_dir, audio_dir, output_file):
     return mapper
 
 # Example usage
-image_directory = './test/images'
-audio_directory = './test/audios'
-output_mapper_file = './test/mapper.json'
+# image_directory = './test/images'
+# audio_directory = './test/audios'
+# output_mapper_file = './test/mapper.json'
 
-mapper = generate_mapper_from_dataset_recursive(image_directory, audio_directory, output_mapper_file)
+# mapper = generate_mapper_from_dataset_recursive(image_directory, audio_directory, output_mapper_file)
 # print("Mapper generated:", mapper)

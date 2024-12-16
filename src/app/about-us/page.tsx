@@ -19,7 +19,7 @@ function AboutUs() {
         image2="/max.jpg"
         name="Rafen Max Alessandro"
         nim="13523031"
-        quote="..."
+        quote="makasih pondok indah kost udah mau menampung kami tiap malam"
       />
       <Profile 
         image1='/ash.png'

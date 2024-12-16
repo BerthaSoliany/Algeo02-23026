@@ -63,7 +63,7 @@ function Album() {
       <NavBar/>
       <div className="mt-2 bg-black bg-opacity-50 rounded-3xl w-[90%] min-h-screen flex flex-col items-center p-0">
         <div className="bg-black bg-opacity-50 rounded-3xl p-20 w-full h-[220px] flex flex-row items-center items-start space-x-10">
-          <div className="absolute left-[7%] top-[17%]">
+          <div className="absolute left-[7%] top-[18%]">
             <a href="/finder">
             <button>
               <GoArrowLeft className="w-7 h-7 text-white"/>

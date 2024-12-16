@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { GoTriangleRight } from "react-icons/go";
 import { GoTriangleLeft } from "react-icons/go";
 import { ClipLoader } from 'react-spinners';
-import { read } from 'node:fs';
+// import { read } from 'node:fs';
 
 interface Album{
   image: string;
@@ -53,12 +53,12 @@ function Finder() {
           let data;
           if (activeButton === 'album') {
             // Fetch album data
-            const response = await fetch('http://127.0.0.1:5000/api/albums'); // Replace with your API endpoint
+            const response = await fetch('http://127.0.0.1:5000/api/albums');
             data = await response.json();
             setAlbumData(data);
           } else if (activeButton === 'music') {
             // Fetch music data
-            const response = await fetch('http://127.0.0.1:5000/api/music'); // Replace with your API endpoint
+            const response = await fetch('http://127.0.0.1:5000/api/music');
             data = await response.json();
             setMusicData(data);
           }
@@ -80,7 +80,7 @@ function Finder() {
     if (file) {
       if (type === 'upload') {
         setUploadedFileName(file.name);
-        // Check if the uploaded file is an image
+        // Check if the uploaded file is an image/mid
         if (file.type.startsWith('image/')|| file.name.endsWith('.mid')) {
           const url = URL.createObjectURL(file);
           setUploadedImageUrl(url);
@@ -118,22 +118,30 @@ function Finder() {
   };
   
   const handleMakeMapper = async () => {
+    if (mapperFileName) {
+      // alert("Mapper already uploaded. No need to generate.");
+      return;
+    }
+  
     try {
       const response = await fetch('http://127.0.0.1:5000/api/generate_mapper_recursive', {
-        method: 'POST'
+        method: 'POST',
       });
-      if (!response.ok) {
-        throw new Error('Failed to generate mapper');
-      }
       const data = await response.json();
-      console.log('Mapper:', data.mapper);
   
-      // Muat mapper ke state setelah berhasil dibuat
-      await handleLoadMapper();
+      if (!response.ok) {
+        console.error('Error generating mapper:', data.message);
+        alert(data.message);
+        return;
+      }
+  
+      alert("Mapper generated successfully.");
+      await handleLoadMapper(); // Muat mapper baru
     } catch (error) {
       console.error('Error:', error);
     }
   };
+  
    
 
   const handleLoadMapper = async () => {
@@ -174,8 +182,6 @@ function Finder() {
       <NavBar />
       <div className="flex flex-col space-y-2 md:flex-row md:space-x-5 text-xs items-center">
         <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:max-w-[320px] min-h-screen flex flex-col justify-center items-center space-y-2">
-          {/* search dgn click album/music */}
-          {/* mapper dibuat sendiri */}
           <div className="flex flex-col space-y-1 items-center">
             {uploadedImageUrl && (
               <div className="w-[240px] h-[140px] p-2 bg-gray-800 rounded-md flex items-center justify-center">
@@ -209,10 +215,11 @@ function Finder() {
             />
             {mapperFileName && <p className="text-white text-[11px] truncate overflow-hidden text-ellipsis whitespace-nowrap w-[300px] text-center">Mapper: {mapperFileName}</p>}
           </div>
-          <Button
-            text="Make Mapper"
+          {/* ini buat yg otomatis mapper kalo g unggap mapper */}
+          {/* <Button
+            text="Process"
             onClick={handleMakeMapper}
-          />
+          /> */}
         </div>
         <div className="mt-2 bg-black bg-opacity-50 rounded-3xl py-2 px-2 w-[90%] md:w-full min-h-screen flex flex-col items-center justify-center">
           <div className="flex flex-row justify-center items-center mt-1 space-x-5">
@@ -247,31 +254,15 @@ function Finder() {
                 ) : (
                   <MusicCard
                     key={index}
-                    image={item.image}      // Gambar yang diperoleh dari mapper
-                    name={item.name}        // Nama dari API
-                    audioSrc={'audioSrc' in item ? (item as Music).audioSrc : ''} // Audio file dari API
-                    similarity={item.similarity} // Similarity yang diperoleh dari mapper
+                    image={item.image}     
+                    name={item.name}       
+                    audioSrc={'audioSrc' in item ? (item as Music).audioSrc : ''} 
+                    similarity={item.similarity}
                   />
-                  // <MusicCard
-                  //   key={index}
-                  //   image={'image' in item ? (item as Music).image : ''}
-                  //   name={item.name}
-                  //   audioSrc={'audioSrc' in item ? (item as Music).audioSrc : ''}
-                  //   similarity={item.similarity}
-                  // />
                 )
               ))
             ) : (
               <p></p>
-              // mapperData.map((mapperItem, index) => (
-              //   <MusicCard
-              //     key={index}
-              //     image={mapperItem.pic_name}
-              //     name={`Music ${index + 1}`} // Optional: Buat nama default
-              //     audioSrc={mapperItem.audio_file}
-              //     similarity={100} // Optional: Tetapkan nilai default
-              //   />
-              // ))
             )}
           </div>
           )}

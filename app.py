@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 import os
 import json
@@ -33,7 +33,7 @@ def get_mapper():
     except FileNotFoundError:
         return jsonify({"error": "Mapper file not found"}), 404
 
-
+# ini untuk menampilkan data album
 @app.route('/api/albums', methods=['GET'])
 def get_albums():
     mapper_file = './test/mapper.json' 
@@ -41,19 +41,20 @@ def get_albums():
     try: 
         with open(mapper_file, 'r') as file:
             mapper_data = json.load(file)
+        # merupakan hasil dari ARI. Sekarang hanya dummy
         albums = [
             {"name": "guts.png", "similarity": 35.17},
             {"name": "I_Want_It_That_Way.jpg", "similarity": 57.91, "image": None},
 
         ]
-        
         # print("Albums awal:", albums)
-
+        
+        # untuk gabungin hasil mapper dengan hasil ARI
         for album in albums:
             matched = next((item for item in mapper_data if album['name'] in item['image']), None)
             # print(f"Matching album {album['name']} -> {matched}")
             if matched:
-                album["image"] = f"{matched['image']}"
+                album["image"] = f"./test/images/{matched['image']}" # sesuain path
             else:
                 album["image"] = None
         with open(output_file, 'w') as output:
@@ -63,6 +64,7 @@ def get_albums():
     except FileNotFoundError:
         return jsonify({"error": "Mapper file not found"}), 404
 
+# ini untuk menampilkan data music
 @app.route('/api/music', methods=['GET'])
 def get_music():
     mapper_file = './test/mapper.json'
@@ -70,15 +72,17 @@ def get_music():
     try:
         with open(mapper_file, 'r') as file:
             mapper_data = json.load(file)
+        # merupakan hasil dari MRI. Sekarang hanya dummy
         music = [
             {"name": "Theme-From-'Beauty-And-The-Beast'-(Walt-Disney).mid", "similarity": 100},
             {"name": "I_Want_It_That_Way.mid", "similarity": 57.91, "image": None, "audioSrc": None},
         ]
+        # untuk gabungin hasil mapper dengan hasil MRI
         for track in music:
             matched = next((item for item in mapper_data if track['name'] in item['audioSrc']), None)
             if matched:
-                track["image"] = f"{matched['image']}"
-                track["audioSrc"] = f"{matched['audioSrc']}"
+                track["image"] = f"{matched['image']}"  # sesuain path
+                track["audioSrc"] = f"{matched['audioSrc']}" # sesuain path
             else:
                 track["image"] = None
                 track["audioSrc"] = None
