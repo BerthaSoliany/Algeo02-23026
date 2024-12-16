@@ -23,7 +23,7 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
     ```sh
     git clone https://github.com/BerthaSoliany/Algeo02-23026.git
 
-2. Ubah directori menuju `src`
+2. Ubah directori menuju `src/backend`
     ```sh
     cd src
 
