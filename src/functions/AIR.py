@@ -2,10 +2,11 @@ import numpy as np
 from PIL import Image
 import os
 import time
-import scipy.linalg
+import scipy.sparse.linalg
 from scipy.spatial.distance import pdist
+import concurrent.futures
 
-# yang sifatnya interchangeable: target_size (di dalam load_and_process_image), k (di dalam set_pca), top_n
+# yang sifatnya interchangeable: target_size (di dalam load_and_process_image), k (di dalam set_pca), top_n (jumlah n teratas foto yang ditampilkan), dan batch_size (di threading)
 def nearest_neighbor(img_array, target_size):
     
     original_height, original_width = img_array.shape
@@ -31,31 +32,49 @@ def nearest_neighbor(img_array, target_size):
 
     return resized_array
 
-def load_and_process_image(image_path, dataset, folder_path):
-
-    # Memuat gambar
+def load_and_process_image(image_path, dataset, folder_path=None):
     if dataset:
         image_path = os.path.join(folder_path, image_path)
-    img = Image.open(image_path)
     
-    # Mengonversi ke array NumPy (format RGB)
+    img = Image.open(image_path)
     img_array = np.asarray(img)
     
-    # Melakukan konversi manual ke grayscale
-    if len(img_array.shape) == 3:  # Jika gambar berwarna (RGB)
+    # Konversi ke grayscale
+    if len(img_array.shape) == 3:  
         R, G, B = img_array[:, :, 0], img_array[:, :, 1], img_array[:, :, 2]
         grayscale_array = 0.2989 * R + 0.5870 * G + 0.1140 * B
-    else:  # Jika gambar sudah grayscale
+    else:
         grayscale_array = img_array
     
-    # Mengubah ukuran array ke dimensi target secara manual
+    # Resize menggunakan nearest neighbor
     target_size = (64, 64)
     resized_array = nearest_neighbor(grayscale_array, target_size)
     
-    # Mengubah array 2D menjadi vektor 1D
+    # Flatten array menjadi vektor 1D
     img_vector = resized_array.flatten()
-    
+
     return img_vector
+
+def chunk_list(input_list, batch_size):
+    
+    # Membagi list input menjadi beberapa bagian (batch)
+    return [input_list[i:i + batch_size] for i in range(0, len(input_list), batch_size)]
+
+def process_images_in_parallel(image_paths, dataset, folder_path, batch_size=10):
+    
+    # Membagi image_paths menjadi beberapa batch
+    batches = chunk_list(image_paths, batch_size)
+    all_processed_images = []
+
+    # Memproses setiap batch menggunakan ThreadPoolExecutor
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for batch in batches:
+            
+            # Map untuk setiap batch
+            processed_images = list(executor.map(lambda path: load_and_process_image(path, dataset, folder_path), batch))
+            all_processed_images.extend(processed_images)
+
+    return all_processed_images
 
 def standarized_dataset(processed_images):
     
@@ -75,7 +94,7 @@ def set_pca(centered_dataset):
     centered_dataset_scaled = centered_dataset / np.sqrt(centered_dataset.shape[0])
 
     # Lakukan Singular Value Decomposition (SVD)
-    U, S, Ut = scipy.linalg.svd(centered_dataset_scaled, full_matrices=False)
+    U, S, Ut = scipy.sparse.linalg.svds(centered_dataset_scaled)
 
     explained_variance = (S ** 2) / np.sum(S ** 2)
     cumulative_variance = np.cumsum(explained_variance)
@@ -181,7 +200,7 @@ if __name__ == "__main__":
 
     # print(image_paths)
 
-    processed_images = [load_and_process_image(image_path, dataset=True, folder_path=folder_path) for image_path in image_paths]
+    processed_images = process_images_in_parallel(image_paths, dataset=True, folder_path=folder_path)
 
     mean_pixel_values, centered_dataset = standarized_dataset(processed_images)
 
@@ -196,7 +215,7 @@ if __name__ == "__main__":
         except ValueError as e:
             print(e)
 
-    query_vector = load_and_process_image(query_path, dataset=False, folder_path=None)
+    query_vector = load_and_process_image(query_path, dataset=False)
 
     projected_query_vector = project_to_pca(query_vector, mean_pixel_values, eigenvectors)
 
