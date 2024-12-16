@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ProcessPoolExecutor
 import zipfile
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -8,9 +9,8 @@ import numpy as np
 from mido import MidiFile
 from flask import send_from_directory
 from functions.MIR import (
-    load_midi_file_considering_main_channel,
-    find_most_similar_midi,
-    fix_invalid_bytes
+    process_midi_file,
+    find_most_similar_midi
 )
 from functions.AIR import (
     process_images_in_parallel,
@@ -150,6 +150,7 @@ def upload_query():
 # endpoint untuk menghitung similarity
 similarity_results = None
 @app.route('/process-similarity', methods=['POST'])
+@app.route('/process-similarity', methods=['POST'])
 def process_similarity():
     global similarity_results
     try:
@@ -158,23 +159,30 @@ def process_similarity():
 
         query_file = os.path.join(QUERY_UPLOAD_FOLDER, os.listdir(QUERY_UPLOAD_FOLDER)[0])
 
-        processed_audios = []
-        audio_names = []
+        # ambil semua file MIDI dalam folder dataset
+        dataset_files = [
+            os.path.join(root, file)
+            for root, _, files in os.walk(EXTRACT_FOLDER)
+            for file in files if file.endswith('.mid') or file.endswith('.midi')
+        ]
 
-        for root, _, files in os.walk(EXTRACT_FOLDER):
-            for file in files:
-                if file.endswith('.mid') or file.endswith('.midi'):
-                    audio_names.append(file)
-                    file_path = os.path.join(root, file)
-                    try:
-                        fix_invalid_bytes(file_path, file_path)
-                        db_notes = load_midi_file_considering_main_channel(file_path)
-                        processed_audios.append(db_notes)
-                    except Exception as e:
-                        print(f"Failed to process file {file_path}: {e}")
+        if not dataset_files:
+            return jsonify({'success': False, 'error': 'No MIDI files found in dataset'})
 
+        # Parallel processing dataset
+        with ProcessPoolExecutor() as executor:
+            results = list(executor.map(process_midi_file, dataset_files))
+
+        # Filter file MIDI yang berhasil diproses
+        processed_audios = [result for result in results if result is not None]
+
+        # Ekstrak nama file untuk referensi
+        audio_names = [os.path.basename(path) for path in dataset_files]
+
+        # Temukan tingkat kemiripan menggunakan query file
         similarities = find_most_similar_midi(query_file, processed_audios)
-        
+
+        # Filter hasil berdasarkan threshold
         threshold = 0.55
         filtered_results = [
             {
@@ -186,6 +194,7 @@ def process_similarity():
             for i, (idx, value) in enumerate(similarities) if value >= threshold
         ]
 
+        # Simpan hasil global
         similarity_results = filtered_results
 
         return jsonify({
@@ -193,6 +202,7 @@ def process_similarity():
             'results': filtered_results,
             'threshold': threshold
         })
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
