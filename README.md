@@ -1,10 +1,6 @@
 # Algeo02-23026
 > Tugas Besar 2 Aljabar Linear dan Geometri
 
-<!-- foto logo -->
-<p align="center">
-    <img src=https://github.com/user-attachments/assets/4831f2f9-fe7b-4dcc-9d35-98c8e363388c/>
-</p>
 <h1 align="center">Ikan dan Pisang</h1>
 <h2 align="center">Kelompok 35</h2>
 
@@ -119,6 +115,7 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
 
 5. Hasil
 
+
 ### Halaman About Us
 ![image](https://github.com/user-attachments/assets/514e2f9b-a423-4b31-bc41-4d4a89780170)
 ![image](https://github.com/user-attachments/assets/e742ca84-41a8-41bd-ace6-e8869b204156)
@@ -131,7 +128,7 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
 - Auto-save
 ![image](https://github.com/user-attachments/assets/378b2d0c-9ea9-4915-b31a-c27bd270c1ea)
 
-<!-- foto bareng -->
+
 ## Contributors
 | NIM | Nama |
 | --- | --- |
