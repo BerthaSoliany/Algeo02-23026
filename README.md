@@ -23,7 +23,13 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
     ```sh
     git clone https://github.com/BerthaSoliany/Algeo02-23026.git
 
-2. Ubah directori menuju `src/backend`
+2. Jalankan website
+    ```sh
+    npm run dev
+
+3. Lakukan klik link yang muncul di terminal. Biasanya http://localhost:3000
+
+4. Ubah directori menuju `src/backend`
     ```
     cd src
     ```
@@ -31,11 +37,11 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
     cd backend
     ```
 
-3. Buat virtual enviroment
+5. Buat virtual enviroment
     ```sh
     python -m venv venv
 
-4. Aktivasi virtual enviroment</br>
+6. Aktivasi virtual enviroment</br>
     Untuk windows:
     ```
     venv\Scripts\activate
@@ -50,19 +56,15 @@ Program ini mempunyai dua jenis *information retrieval*, yakni *Image Retrieval*
 > [!NOTE]
 > Sesuaikan kembali path dari activate sesuai dengan venv masing-masing
 
-5. Install dependensi
+7. Install dependensi
     ```sh
     pip install -r requirements.txt
 
-6. Jalankan app.py
+8. Jalankan app.py
     ```sh
     python app.py
 
-7. Jalankan website
-    ```sh
-    npm run dev
-
-8. Lakukan klik link yang muncul di terminal. Biasanya http://localhost:3000
+9. Selamat menjalankan program
 
 
 # How to Use
