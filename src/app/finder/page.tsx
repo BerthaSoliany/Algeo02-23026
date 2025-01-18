@@ -3,7 +3,7 @@ import Button from '@/src/components/Button';
 import AlbumCard from '@/src/components/AlbumCard';
 import MusicCard from '@/src/components/MusicCard';
 import NavBar from '@/src/components/NavBar';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GoTriangleRight } from "react-icons/go";
 import { GoTriangleLeft } from "react-icons/go";
 import { ClipLoader } from 'react-spinners';
@@ -35,6 +35,8 @@ function Finder() {
   const [musicData, setMusicData] = useState<Music[]>([]);
   const [activeAudio, setActiveAudio] = useState<string | null>(null);
   const itemsPerPage = 15;
+
+  const executionTimeRef = useRef<number | null>(null);
 
   const handlePlayAudio = (audioName: string) => {
     console.log('Setting active audio:', audioName);
@@ -197,9 +199,17 @@ function Finder() {
         const endTime = performance.now();
         const elapsedTime = (endTime - startTime)/1000;
         setExecutionTime(elapsedTime);
+        executionTimeRef.current = elapsedTime;
     } catch (error) {
         console.error('Failed to fetch similarity results:', error);
         setLoading(false);
+    }
+    finally {
+      const endTime = performance.now();
+      const elapsedTime = (endTime - startTime) / 1000;
+      setExecutionTime(elapsedTime); // Always update execution time
+      executionTimeRef.current = elapsedTime;
+      setLoading(false);
     }
   };
 
@@ -226,11 +236,41 @@ function Finder() {
       const endTime = performance.now();
       const elapsedTime = (endTime - startTime)/1000;
       setExecutionTime(elapsedTime);
+      executionTimeRef.current = elapsedTime
     } catch (error) {
       console.error('Failed to fetch image similarity results:', error);
       setLoading(false);
     }
+    finally {
+      const endTime = performance.now();
+      const elapsedTime = (endTime - startTime) / 1000;
+      setExecutionTime(elapsedTime); // Always update execution time
+      executionTimeRef.current = elapsedTime;
+      setLoading(false);
+    }
   };  
+
+  useEffect(() => {
+    const clearUploads = async () => {
+      const folderToClear = ['uploaded_datasets', 'uploaded_datasets_image', 'extracted_datasets', 'extracted_datasets_image', 'uploaded_mappers', 'query_files', 'test', 'result'];
+      try {
+        const response = await fetch('http://127.0.0.1:5000/clear-uploads', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ folders: folderToClear }) });
+        if (!response.ok) throw new Error('Failed to clear uploads');
+
+        const data = await response.json();
+        if (data.success) {
+          console.log('Uploads cleared successfully');
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Failed to clear uploads:', error);
+      }
+    };
+
+    clearUploads();
+  }, []);
+
 
   // replace this with the real time data fetching
   useEffect(() => {
@@ -241,12 +281,12 @@ function Finder() {
           let data;
           if (activeButton === 'album') {
             // Fetch album data
-            const response = await fetch('http://127.0.0.1:5000/api/albums'); // Replace with your API endpoint
+            const response = await fetch('http://127.0.0.1:5000/extracted_datasets_image'); // Replace with your API endpoint
             data = await response.json();
             setAlbumData(data);
           } else if (activeButton === 'music') {
             // Fetch music data
-            const response = await fetch('http://127.0.0.1:5000/api/albums'); // Replace with your API endpoint
+            const response = await fetch('http://127.0.0.1:5000/extracted_datasets'); // Replace with your API endpoint
             data = await response.json();
             setMusicData(data);
           }
@@ -478,8 +518,8 @@ function Finder() {
             )}
           </div>
           )}
-          {!loading && executionTime !== null && (
-            <p className='text-white text-sm'>Waktu eksekusi: {executionTime.toFixed(2)} s</p>
+          {executionTimeRef.current !== null && (
+            <p className='text-white text-sm'>Waktu eksekusi: {executionTimeRef.current.toFixed(2)} s</p>
           )}
           {currentItems.length > 0 && (
             <div className="flex flex-col items-center mt-2">
