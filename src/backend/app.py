@@ -43,6 +43,34 @@ os.makedirs(EXTRACT_FOLDER, exist_ok=True)
 os.makedirs(DATASET_UPLOAD_IMAGE_FOLDER, exist_ok=True)
 os.makedirs(EXTRACT_IMAGE_FOLDER, exist_ok=True)
 
+# endpoint untuk membersihkan direktori uploads
+@app.route('/clear-uploads', methods=['POST'])
+def clear_uploads():
+    data = request.get_json()
+    folders_to_clear = data.get('folders', [])
+
+    if not folders_to_clear:
+        return jsonify({'success': False, 'error': 'No folders provided'}), 400
+
+    try:
+        # Menghapus file di setiap folder
+        for folder in folders_to_clear:
+            folder_path = os.path.join(folder)
+            if os.path.exists(folder_path):
+                for filename in os.listdir(folder_path):
+                    file_path = os.path.join(folder_path, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path) 
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                print(f"Files in {folder_path} have been cleared.")
+            else:
+                print(f"Folder {folder_path} does not exist.")
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error clearing uploads: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # bersihkan direktori setiap upload query atau dataset baru
 def clear_directory(directory_path):
     if not os.path.exists(directory_path):
@@ -78,6 +106,7 @@ def upload_dataset():
     os.makedirs(extract_path, exist_ok=True)
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            extract_path = EXTRACT_FOLDER
             zip_ref.extractall(extract_path)
     except zipfile.BadZipFile:
         return jsonify({'error': 'Invalid ZIP file'}), 400
@@ -119,11 +148,12 @@ def upload_dataset_image():
     os.makedirs(extract_path, exist_ok=True)
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            extract_path = EXTRACT_IMAGE_FOLDER
             zip_ref.extractall(extract_path)
     except zipfile.BadZipFile:
         return jsonify({'error': 'Invalid ZIP file'}), 400
 
-    audio_directory = './extracted_datasets'
+    audio_directory = './get_audio'
     mapper_file = './test/mapper.json'
 
     if os.path.exists(audio_directory) and os.listdir(audio_directory):
@@ -172,13 +202,19 @@ def process_similarity():
     global similarity_results
     try:
         # Lokasi dataset
-        image_directory = './extracted_datasets_image'
-        audio_directory = './extracted_datasets'
+        # image_directory = './extracted_datasets_image'
+        # audio_directory = './extracted_datasets'
         mapper_file = './test/mapper.json'
 
         # Pastikan direktori dan file yang diperlukan ada
         if not os.path.exists('./test'):
             os.makedirs('./test', exist_ok=True)
+
+        if os.path.exists('./uploaded_mappers') and os.listdir('./uploaded_mappers'):
+            mapper_file = os.path.join('./uploaded_mappers', os.listdir('./uploaded_mappers')[0])
+            print("Using uploaded mapper file:", mapper_file)
+        else:
+            print("No mapper file uploaded. Using randomize mapper file.")
 
         # Baca query file
         if not os.listdir(QUERY_UPLOAD_FOLDER):
@@ -228,10 +264,9 @@ def process_similarity():
                     "rank": i + 1,
                     "file_name": audio_name,
                     "similarity": round(value * 100, 2),
-                    "audioSrc": f"http://127.0.0.1:5000/get-audio/{audio_name}",
+                    "audioSrc": f"http://127.0.0.1:5000/extracted_datasets/{dataset_files[idx][21:]}",
                     "image": image_path
                 })
-
         # Simpan hasil global
         similarity_results = filtered_results
 
@@ -243,6 +278,13 @@ def process_similarity():
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+    finally:
+        try:
+            with open('./result/audio_results.json', 'w') as f:
+                json.dump(filtered_results, f, indent=4)
+            print("Results saved to results.json")
+        except Exception as e:
+            print(f"Failed to save results: {e}")
 
 @app.route('/get-similarity-results', methods=['GET'])
 def get_similarity_results():
@@ -316,6 +358,13 @@ def process_image_similarity():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+    finally:
+        try:
+            with open('./result/image_results.json', 'w') as f:
+                json.dump(filtered_results, f, indent=4)
+            print("Results saved to results.json")
+        except Exception as e:
+            print(f"Failed to save results: {e}")
 
 @app.route('/get-image-similarity-results', methods=['GET'])
 def get_image_similarity_results():
@@ -325,9 +374,10 @@ def get_image_similarity_results():
     return jsonify({'success': True, 'results': image_similarity_results})
 
 # endpoint untuk menyajikan file MIDI dari extracted_datasets
-@app.route('/get-audio/<path:filename>', methods=['GET'])
+@app.route('/extracted_datasets/<path:filename>', methods=['GET'])
 def get_audio(filename):
     try:
+        print(f"Serving file: {filename}")  # Debug log
         return send_from_directory(EXTRACT_FOLDER, filename, as_attachment=False)
     except FileNotFoundError:
         return jsonify({'error': 'File not found'}), 404
@@ -369,20 +419,20 @@ def upload_mapper():
         print(f"Failed to save mapper file: {e}")
         return jsonify({'error': 'Failed to save mapper file'}), 500
 
-@app.route('/generate-mapper', methods=['POST'])
-def generate_mapper():
-    image_directory = './test/images'
-    audio_directory = './test/audios'
-    output_mapper_file = './test/mapper.json'
+# @app.route('/generate-mapper', methods=['POST'])
+# def generate_mapper():
+#     image_directory = './test/images'
+#     audio_directory = './test/audios'
+#     output_mapper_file = './test/mapper.json'
 
-    try:
-        mapper = generate_mapper_from_dataset_recursive(image_directory, audio_directory, output_mapper_file)
-        return jsonify({
-            "message": "Mapper generated successfully",
-            "mapper": mapper
-        })
-    except Exception as e:
-        return jsonify({'error': f"Failed to generate mapper: {str(e)}"}), 500
+#     try:
+#         mapper = generate_mapper_from_dataset_recursive(image_directory, audio_directory, output_mapper_file)
+#         return jsonify({
+#             "message": "Mapper generated successfully",
+#             "mapper": mapper
+#         })
+#     except Exception as e:
+#         return jsonify({'error': f"Failed to generate mapper: {str(e)}"}), 500
 
 @app.route('/get-dataset-audio', methods=['GET'])
 def get_dataset_audio():
@@ -390,7 +440,7 @@ def get_dataset_audio():
         dataset_files = [
             {
                 "name": file,
-                "audioSrc": f"http://127.0.0.1:5000/get-audio/{file}",
+                "audioSrc": f"http://127.0.0.1:5000/extracted_datasets/{file}",
             }
             for root, _, files in os.walk(EXTRACT_FOLDER)
             for file in files if file.endswith('.mid') or file.endswith('.midi')

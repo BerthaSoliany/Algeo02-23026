@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { FaPlayCircle } from 'react-icons/fa';
 import { FaPauseCircle } from 'react-icons/fa';
-import { FaExclamationCircle } from 'react-icons/fa';
+// import { FaExclamationCircle } from 'react-icons/fa';
 import MIDI from 'midi.js';
 
 interface MusicCardProps {
@@ -17,6 +17,15 @@ function MusicCard({ image, name, audioSrc, similarity, onPlay, isPlaying }: Mus
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasError, setHasError] = useState(false);
 
+  useEffect(() => {
+    MIDI.loadPlugin({
+      soundfontUrl: new URL("https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/"),
+      instrument: "acoustic_grand_piano",
+      onsuccess: () => console.log('MIDI.js loaded successfully!')
+    });
+  }
+  , []);
+
   const handlePlayPause = () => {
     if (!audioSrc) {
       setHasError(true);
@@ -26,9 +35,11 @@ function MusicCard({ image, name, audioSrc, similarity, onPlay, isPlaying }: Mus
     if (onPlay) onPlay(); // Beritahu Finder untuk menghentikan kartu lain
 
     if (audioSrc.endsWith('.mid')) {
+      console.log('Loading MIDI file from:', audioSrc);
       if (isPlaying) {
         MIDI.Player.stop();
       } else {
+        console.log('Attempting to load and play MIDI file:', audioSrc);
         MIDI.Player.loadFile(audioSrc, () => MIDI.Player.start());
       }
     } else if (audioRef.current) {
